@@ -3,6 +3,7 @@ package dev.lui.huaweisync.data
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 import androidx.room.Upsert
 
 @Dao
@@ -19,6 +20,10 @@ interface SyncLedgerDao {
     @Insert
     suspend fun insert(entity: SyncLedgerEntity)
 
+    @Update
+    suspend fun update(entity: SyncLedgerEntity): Int
+
+    /** Legacy/internal persistence seam; orchestration uses [SyncLedgerStore]. */
     @Upsert
     suspend fun upsert(entity: SyncLedgerEntity)
 }

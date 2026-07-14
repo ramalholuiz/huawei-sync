@@ -8,4 +8,7 @@ import androidx.room.TypeConverters
 @TypeConverters(SyncLedgerConverters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun syncLedgerDao(): SyncLedgerDao
+
+    fun syncLedgerStore(clock: LedgerClock = SystemLedgerClock): SyncLedgerStore =
+        SyncLedgerStore(this, clock)
 }
