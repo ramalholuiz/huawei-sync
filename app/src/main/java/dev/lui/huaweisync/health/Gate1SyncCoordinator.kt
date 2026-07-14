@@ -2,15 +2,15 @@ package dev.lui.huaweisync.health
 
 import dev.lui.huaweisync.data.PreparedLedgerWorkout
 import dev.lui.huaweisync.data.SyncLedgerEntry
-import dev.lui.huaweisync.data.SyncLedgerStore
 import dev.lui.huaweisync.data.SyncStatus
 import dev.lui.huaweisync.domain.PreviousWorkoutMetadata
 import dev.lui.huaweisync.domain.SyntheticWorkoutFactory
 import dev.lui.huaweisync.domain.WorkoutMetadataPolicy
 import java.time.Clock
+import kotlinx.coroutines.CancellationException
 
 class Gate1SyncCoordinator(
-    private val ledgerStore: SyncLedgerStore,
+    private val ledgerStore: Gate1SyncLedger,
     private val writer: HealthWorkoutWriter,
     private val clock: Clock = Clock.systemDefaultZone(),
 ) {
@@ -43,13 +43,37 @@ class Gate1SyncCoordinator(
             return prepared.toResult()
         }
 
-        ledgerStore.beginWrite(metadata.clientRecordId)
+        val writing = ledgerStore.beginWrite(metadata.clientRecordId)
         val record = HealthWorkoutMapper.toExerciseSessionRecord(workout, metadata)
         val healthConnectRecordId = writer.write(record)
-        return ledgerStore.recordAccepted(metadata.clientRecordId, healthConnectRecordId).toResult()
+        return try {
+            ledgerStore.recordAccepted(metadata.clientRecordId, healthConnectRecordId).toResult()
+        } catch (failure: Exception) {
+            if (failure is CancellationException) throw failure
+            val localFinalizationStatus = try {
+                ledgerStore.recordAcceptanceUncertain(
+                    metadata.clientRecordId,
+                    healthConnectRecordId,
+                )
+                LocalFinalizationStatus.RECONCILIATION_PENDING
+            } catch (recoveryFailure: Exception) {
+                if (recoveryFailure is CancellationException) throw recoveryFailure
+                LocalFinalizationStatus.FAILED
+            }
+            Gate1SyncResult.ExternalAccepted(
+                clientRecordId = metadata.clientRecordId,
+                clientRecordVersion = metadata.clientRecordVersion,
+                ledgerRowsForClientRecordId = 1,
+                writeCountForClientRecordId = writing.attemptCount,
+                externalRecordId = healthConnectRecordId,
+                phase = SyncPhase.LOCAL_FINALIZATION,
+                code = "LOCAL_FINALIZATION_FAILED",
+                localFinalizationStatus = localFinalizationStatus,
+            )
+        }
     }
 
-    private fun SyncLedgerEntry.toResult() = Gate1SyncResult(
+    private fun SyncLedgerEntry.toResult() = Gate1SyncResult.Completed(
         clientRecordId = clientRecordId,
         clientRecordVersion = clientRecordVersion,
         ledgerRowsForClientRecordId = 1,

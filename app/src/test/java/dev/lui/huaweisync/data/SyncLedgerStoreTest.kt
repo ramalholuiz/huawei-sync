@@ -40,6 +40,31 @@ class SyncLedgerStoreTest {
     fun tearDown() = database.close()
 
     @Test
+    fun uncertainAcceptancePreservesIdentityAndExternalWriteFacts() = runTest {
+        val prepared = store.prepare(workout())
+        val writing = store.beginWrite(prepared.clientRecordId)
+        clock.now = 200L
+
+        val uncertain = store.recordAcceptanceUncertain(
+            prepared.clientRecordId,
+            "health-connect-id-1",
+        )
+
+        assertEquals(writing.clientRecordId, uncertain.clientRecordId)
+        assertEquals(writing.sourceProvider, uncertain.sourceProvider)
+        assertEquals(writing.sourceRecordId, uncertain.sourceRecordId)
+        assertEquals(writing.contentHash, uncertain.contentHash)
+        assertEquals(writing.clientRecordVersion, uncertain.clientRecordVersion)
+        assertEquals(SyncStatus.RECONCILIATION_PENDING, uncertain.status)
+        assertEquals("health-connect-id-1", uncertain.healthConnectRecordId)
+        assertEquals(200L, uncertain.acceptedAtEpochMillis)
+        assertEquals(1, uncertain.attemptCount)
+        assertEquals("LOCAL_FINALIZATION_FAILED", uncertain.lastErrorCode)
+        assertEquals(SyncErrorPhase.ACCEPTANCE, uncertain.lastErrorPhase)
+        assertEquals(200L, uncertain.lastErrorAtEpochMillis)
+    }
+
+    @Test
     fun acceptedVerificationFailureAndConfirmationPreserveDurableAcceptanceFacts() = runTest {
         val prepared = store.prepare(workout())
         assertEquals(SyncStatus.PENDING, prepared.status)

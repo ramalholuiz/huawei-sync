@@ -13,6 +13,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -61,6 +62,74 @@ class Gate1SyncCoordinatorTest {
         assertEquals(clientRecordId, writer.records.single().metadata.clientRecordId)
         assertEquals(1L, writer.records.single().metadata.clientRecordVersion)
         assertEquals(List(3) { 1 }, results.map { it.writeCountForClientRecordId })
+    }
+
+    @Test
+    fun acceptedExternalWriteSurvivesLocalFinalizationFailure() = runTest {
+        val realLedger = database.syncLedgerStore(LedgerClock { 100L })
+        val expected = IllegalStateException("database unavailable")
+        val failingLedger = object : Gate1SyncLedger by realLedger {
+            override suspend fun recordAccepted(
+                clientRecordId: String,
+                healthConnectRecordId: String?,
+            ) = throw expected
+        }
+        val coordinator = Gate1SyncCoordinator(
+            ledgerStore = failingLedger,
+            writer = writer,
+            clock = Clock.fixed(Instant.parse("2026-07-14T12:00:00Z"), ZoneId.of("UTC")),
+        )
+
+        val result = coordinator.runSyntheticStrengthSync()
+
+        assertTrue(result is Gate1SyncResult.ExternalAccepted)
+        result as Gate1SyncResult.ExternalAccepted
+        assertEquals(SyncPhase.LOCAL_FINALIZATION, result.phase)
+        assertEquals("LOCAL_FINALIZATION_FAILED", result.code)
+        assertEquals(LocalFinalizationStatus.RECONCILIATION_PENDING, result.localFinalizationStatus)
+        assertEquals(SyntheticWorkoutFactory.CLIENT_RECORD_ID, result.clientRecordId)
+        assertEquals(1L, result.clientRecordVersion)
+        assertEquals("health-connect-id-1", result.externalRecordId)
+
+        val durable = realLedger.findByClientRecordId(result.clientRecordId)!!
+        assertEquals(SyncStatus.RECONCILIATION_PENDING, durable.status)
+        assertEquals(100L, durable.acceptedAtEpochMillis)
+        assertEquals("health-connect-id-1", durable.healthConnectRecordId)
+        assertEquals(1, durable.attemptCount)
+    }
+
+    @Test
+    fun externalAcceptanceMetadataSurvivesWhenRecoveryPersistenceAlsoFails() = runTest {
+        val realLedger = database.syncLedgerStore(LedgerClock { 100L })
+        val failingLedger = object : Gate1SyncLedger by realLedger {
+            override suspend fun recordAccepted(
+                clientRecordId: String,
+                healthConnectRecordId: String?,
+            ) = throw IllegalStateException("database unavailable")
+
+            override suspend fun recordAcceptanceUncertain(
+                clientRecordId: String,
+                healthConnectRecordId: String?,
+            ) = throw IllegalStateException("database still unavailable")
+        }
+        val coordinator = Gate1SyncCoordinator(
+            ledgerStore = failingLedger,
+            writer = writer,
+            clock = Clock.fixed(Instant.parse("2026-07-14T12:00:00Z"), ZoneId.of("UTC")),
+        )
+
+        val result = coordinator.runSyntheticStrengthSync()
+
+        assertTrue(result is Gate1SyncResult.ExternalAccepted)
+        result as Gate1SyncResult.ExternalAccepted
+        assertEquals(LocalFinalizationStatus.FAILED, result.localFinalizationStatus)
+        assertEquals(SyntheticWorkoutFactory.CLIENT_RECORD_ID, result.clientRecordId)
+        assertEquals(1L, result.clientRecordVersion)
+        assertEquals("health-connect-id-1", result.externalRecordId)
+        val durable = realLedger.findByClientRecordId(result.clientRecordId)!!
+        assertEquals(SyncStatus.WRITING, durable.status)
+        assertEquals(1, durable.attemptCount)
+        assertNull(durable.acceptedAtEpochMillis)
     }
 
     @Test

@@ -1,6 +1,7 @@
 package dev.lui.huaweisync.data
 
 import androidx.room.withTransaction
+import dev.lui.huaweisync.health.Gate1SyncLedger
 
 fun interface LedgerClock {
     fun nowEpochMillis(): Long
@@ -21,17 +22,17 @@ class SyncLedgerConflictException(message: String) : IllegalStateException(messa
 class SyncLedgerStore(
     private val database: AppDatabase,
     private val clock: LedgerClock = SystemLedgerClock,
-) {
+) : Gate1SyncLedger {
     private val dao: SyncLedgerDao
         get() = database.syncLedgerDao()
 
     suspend fun findByClientRecordId(clientRecordId: String): SyncLedgerEntry? =
         dao.findByClientRecordId(clientRecordId)?.toEntry()
 
-    suspend fun findBySource(sourceProvider: String, sourceRecordId: String): SyncLedgerEntry? =
+    override suspend fun findBySource(sourceProvider: String, sourceRecordId: String): SyncLedgerEntry? =
         dao.findBySource(sourceProvider, sourceRecordId)?.toEntry()
 
-    suspend fun prepare(workout: PreparedLedgerWorkout): SyncLedgerEntry = database.withTransaction {
+    override suspend fun prepare(workout: PreparedLedgerWorkout): SyncLedgerEntry = database.withTransaction {
         val bySource = dao.findBySource(workout.sourceProvider, workout.sourceRecordId)
         val byClient = dao.findByClientRecordId(workout.metadata.clientRecordId)
         if (bySource != null && byClient != null && bySource.clientRecordId != byClient.clientRecordId) {
@@ -107,7 +108,7 @@ class SyncLedgerStore(
         prepared.toEntry()
     }
 
-    suspend fun beginWrite(clientRecordId: String): SyncLedgerEntry = mutate(clientRecordId) { row ->
+    override suspend fun beginWrite(clientRecordId: String): SyncLedgerEntry = mutate(clientRecordId) { row ->
         check(row.acceptedAtEpochMillis == null) {
             "An accepted workout must be verified instead of written again."
         }
@@ -127,7 +128,7 @@ class SyncLedgerStore(
         ).withoutError()
     }
 
-    suspend fun recordAccepted(
+    override suspend fun recordAccepted(
         clientRecordId: String,
         healthConnectRecordId: String?,
     ): SyncLedgerEntry = mutate(clientRecordId) { row ->
@@ -140,6 +141,27 @@ class SyncLedgerStore(
             confirmedAtEpochMillis = null,
             updatedAtEpochMillis = now,
         ).withoutError()
+    }
+
+    override suspend fun recordAcceptanceUncertain(
+        clientRecordId: String,
+        healthConnectRecordId: String?,
+    ): SyncLedgerEntry = mutate(clientRecordId) { row ->
+        check(row.status in setOf(SyncStatus.WRITING, SyncStatus.RECONCILIATION_PENDING)) {
+            "Only an active or uncertain write can be marked for reconciliation."
+        }
+        val now = transitionTime(row)
+        row.copy(
+            healthConnectRecordId = healthConnectRecordId ?: row.healthConnectRecordId,
+            status = SyncStatus.RECONCILIATION_PENDING,
+            acceptedAtEpochMillis = row.acceptedAtEpochMillis ?: now,
+            confirmedAtEpochMillis = null,
+            updatedAtEpochMillis = now,
+            lastErrorCode = "LOCAL_FINALIZATION_FAILED",
+            lastErrorPhase = SyncErrorPhase.ACCEPTANCE,
+            lastErrorAtEpochMillis = now,
+            lastErrorMessage = null,
+        )
     }
 
     suspend fun beginVerification(clientRecordId: String): SyncLedgerEntry = mutate(clientRecordId) { row ->
