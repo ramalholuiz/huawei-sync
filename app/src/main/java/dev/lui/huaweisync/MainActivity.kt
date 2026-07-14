@@ -20,12 +20,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.health.connect.client.HealthConnectClient
 import dev.lui.huaweisync.health.Gate1SyncCoordinator
+import dev.lui.huaweisync.health.Gate1SyncResult
 import dev.lui.huaweisync.health.HealthConnectAvailability
 import dev.lui.huaweisync.health.HealthConnectAvailabilityChecker
 import dev.lui.huaweisync.health.HealthConnectPermissions
+import dev.lui.huaweisync.health.HealthConnectSyncPreflight
 import dev.lui.huaweisync.health.HealthConnectWorkoutWriter
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -76,19 +78,23 @@ class MainActivity : ComponentActivity() {
                             onClick = {
                                 scope.launch {
                                     status = try {
-                                        val client = HealthConnectClient.getOrCreate(this@MainActivity)
-                                        val missing = HealthConnectPermissions.missingPermissions(client)
-                                        if (missing.isNotEmpty()) {
-                                            "Cannot sync yet. Missing permissions: ${missing.size}."
-                                        } else {
-                                            val result = Gate1SyncCoordinator(
-                                                ledgerStore = app.ledgerStore,
-                                                writer = HealthConnectWorkoutWriter(client),
-                                            ).runSyntheticStrengthSync()
-                                            "Synced ${result.clientRecordId} v${result.clientRecordVersion}. Ledger rows: ${result.ledgerRowsForClientRecordId}; writes: ${result.writeCountForClientRecordId}."
+                                        val result = Gate1SyncCoordinator(
+                                            ledgerStore = app.ledgerStore,
+                                            writer = HealthConnectWorkoutWriter(applicationContext),
+                                            preflight = HealthConnectSyncPreflight(applicationContext),
+                                        ).runSyntheticStrengthSync()
+                                        when (result) {
+                                            is Gate1SyncResult.Blocked ->
+                                                "Sync blocked [${result.code}]. Writes: ${result.writeCountForClientRecordId}."
+                                            is Gate1SyncResult.WriteFailed ->
+                                                "Sync write failed [${result.code}]. Attempts: ${result.writeCountForClientRecordId}."
+                                            else ->
+                                                "Sync outcome recorded for ${result.clientRecordId} v${result.clientRecordVersion}. Ledger rows: ${result.ledgerRowsForClientRecordId}; writes: ${result.writeCountForClientRecordId}."
                                         }
-                                    } catch (error: Exception) {
-                                        "Gate 1 sync failed: ${error.message ?: error::class.java.simpleName}"
+                                    } catch (cancellation: CancellationException) {
+                                        throw cancellation
+                                    } catch (_: Exception) {
+                                        "Gate 1 sync failed before a structured outcome."
                                     }
                                 }
                             },

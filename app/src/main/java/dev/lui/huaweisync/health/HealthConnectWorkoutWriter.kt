@@ -1,5 +1,6 @@
 package dev.lui.huaweisync.health
 
+import android.content.Context
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.records.ExerciseSessionRecord
 import dev.lui.huaweisync.data.SyncDiagnosticMessage
@@ -24,6 +25,16 @@ class HealthConnectWorkoutWriter internal constructor(
     constructor(client: HealthConnectClient) : this(
         insertRecord = { record ->
             client.insertRecords(listOf(record)).recordIdsList.firstOrNull()
+        },
+    )
+
+    /** Defers client creation until after the coordinator's preflight has reported ready. */
+    constructor(context: Context) : this(
+        insertRecord = { record ->
+            HealthConnectClient.getOrCreate(context)
+                .insertRecords(listOf(record))
+                .recordIdsList
+                .firstOrNull()
         },
     )
 

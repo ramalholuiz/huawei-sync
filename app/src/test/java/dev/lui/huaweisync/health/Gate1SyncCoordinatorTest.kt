@@ -201,6 +201,44 @@ class Gate1SyncCoordinatorTest {
     }
 
     @Test
+    fun retryAfterBlockRunsPreflightAgainWithoutChargingTheBlockedAttempt() = runTest {
+        var preflightChecks = 0
+        val coordinator = Gate1SyncCoordinator(
+            ledgerStore = database.syncLedgerStore(LedgerClock { 100L }),
+            writer = writer,
+            preflight = SyncPreflight {
+                preflightChecks += 1
+                if (preflightChecks == 1) {
+                    SyncPreflightResult.Blocked(
+                        SyncBlock(
+                            reason = SyncBlockReason.PERMISSION,
+                            code = "EXERCISE_SESSION_PERMISSION_REQUIRED",
+                            phase = SyncErrorPhase.PREPARATION,
+                            safeMessage = SyncDiagnosticMessage.PERMISSION_REQUIRED,
+                        ),
+                    )
+                } else {
+                    SyncPreflightResult.Ready
+                }
+            },
+        )
+
+        val blocked = coordinator.runSyntheticStrengthSync()
+        val accepted = coordinator.runSyntheticStrengthSync()
+
+        assertTrue(blocked is Gate1SyncResult.Blocked)
+        assertEquals(0, blocked.writeCountForClientRecordId)
+        assertTrue(accepted is Gate1SyncResult.Completed)
+        assertEquals(1, accepted.writeCountForClientRecordId)
+        assertEquals(2, preflightChecks)
+        assertEquals(1, writer.records.size)
+        val durable = database.syncLedgerStore()
+            .findByClientRecordId(SyntheticWorkoutFactory.CLIENT_RECORD_ID)!!
+        assertEquals(SyncStatus.SYNCED, durable.status)
+        assertEquals(1, durable.attemptCount)
+    }
+
+    @Test
     fun unexpectedPreflightFailureBubblesWithoutCountingAnAttempt() = runTest {
         val expected = IllegalStateException("preflight adapter unavailable")
         val coordinator = Gate1SyncCoordinator(
