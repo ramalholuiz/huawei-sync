@@ -36,6 +36,21 @@ interface Gate1SyncLedger {
     suspend fun beginVerification(clientRecordId: String): SyncLedgerEntry
 
     suspend fun confirm(clientRecordId: String): SyncLedgerEntry
+
+    /** Keeps an unknown external write quarantined until reconciliation is conclusive. */
+    suspend fun recordReconciliationPending(
+        clientRecordId: String,
+        failure: SyncFailure,
+    ): SyncLedgerEntry
+
+    /** Unlocks a new write only after the external system authoritatively reports absence. */
+    suspend fun reconcileForRetry(clientRecordId: String): SyncLedgerEntry
+
+    /** Records an existing external record found by deterministic reconciliation. */
+    suspend fun reconcileAsAccepted(
+        clientRecordId: String,
+        healthConnectRecordId: String? = null,
+    ): SyncLedgerEntry
 }
 
 fun interface SyncPreflight {
@@ -58,6 +73,47 @@ fun interface HealthWorkoutConfirmer {
     suspend fun confirm(request: HealthConfirmationRequest): HealthConfirmationResult
 }
 
+data class HealthReconciliationRequest(
+    val clientRecordId: String,
+    val clientRecordVersion: Long,
+    val externalRecordId: String?,
+)
+
+fun interface HealthWorkoutReconciler {
+    suspend fun reconcile(request: HealthReconciliationRequest): HealthReconciliationResult
+}
+
+sealed interface HealthReconciliationResult {
+    data class Found(val externalRecordId: String) : HealthReconciliationResult {
+        init {
+            require(externalRecordId.isNotBlank()) { "A found record must have an external ID." }
+        }
+    }
+
+    data class AuthoritativelyAbsent(val code: String) : HealthReconciliationResult {
+        init {
+            requireStableReconciliationCode(code)
+        }
+    }
+
+    data class Inconclusive(val code: String) : HealthReconciliationResult {
+        init {
+            requireStableReconciliationCode(code)
+        }
+    }
+
+    data class Failed(val failure: SyncFailure) : HealthReconciliationResult {
+        init {
+            require(failure.disposition == SyncFailureDisposition.RETRYABLE) {
+                "Reconciliation failures must remain retryable."
+            }
+            require(failure.phase == SyncErrorPhase.RECONCILIATION) {
+                "Reconciliation failures must use the reconciliation phase."
+            }
+        }
+    }
+}
+
 sealed interface HealthConfirmationResult {
     data object Confirmed : HealthConfirmationResult
 
@@ -77,11 +133,18 @@ sealed interface HealthConfirmationResult {
     }
 }
 
+private fun requireStableReconciliationCode(code: String) {
+    require(code.matches(Regex("[A-Z][A-Z0-9_]{0,63}"))) {
+        "Reconciliation codes must be stable uppercase identifiers of at most 64 characters."
+    }
+}
+
 enum class SyncPhase {
     PREFLIGHT,
     EXTERNAL_WRITE,
     LOCAL_FINALIZATION,
     CONFIRMATION,
+    RECONCILIATION,
 }
 
 enum class LocalFinalizationStatus {

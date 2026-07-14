@@ -21,6 +21,9 @@ class Gate1SyncCoordinator(
     private val confirmer: HealthWorkoutConfirmer = HealthWorkoutConfirmer {
         HealthConfirmationResult.Inconclusive("CONFIRMER_NOT_CONFIGURED")
     },
+    private val reconciler: HealthWorkoutReconciler = HealthWorkoutReconciler {
+        HealthReconciliationResult.Inconclusive("RECONCILER_NOT_CONFIGURED")
+    },
 ) {
     suspend fun runSyntheticStrengthSync(): Gate1SyncResult {
         val workout = SyntheticWorkoutFactory.create(clock)
@@ -97,6 +100,49 @@ class Gate1SyncCoordinator(
         }
     }
 
+    suspend fun reconcileSyntheticStrengthSync(): Gate1SyncResult {
+        val workout = SyntheticWorkoutFactory.create(clock)
+        val uncertain = checkNotNull(
+            ledgerStore.findBySource(workout.source.stableName, workout.sourceWorkoutId),
+        ) { "Reconciliation requires a prepared ledger row." }
+        check(uncertain.status in setOf(SyncStatus.WRITING, SyncStatus.RECONCILIATION_PENDING)) {
+            "Reconciliation requires an uncertain external write."
+        }
+
+        val request = HealthReconciliationRequest(
+            clientRecordId = uncertain.clientRecordId,
+            clientRecordVersion = uncertain.clientRecordVersion,
+            externalRecordId = uncertain.healthConnectRecordId,
+        )
+        return when (val result = reconciler.reconcile(request)) {
+            is HealthReconciliationResult.Found -> finalizeReconciliation(
+                uncertain = uncertain,
+                resolution = ReconciliationResolution.EXISTING_ACCEPTED,
+                externalRecordId = result.externalRecordId,
+                code = "RECONCILED_EXISTING",
+            )
+            is HealthReconciliationResult.AuthoritativelyAbsent -> finalizeReconciliation(
+                uncertain = uncertain,
+                resolution = ReconciliationResolution.RETRY_ALLOWED,
+                externalRecordId = null,
+                code = result.code,
+            )
+            is HealthReconciliationResult.Inconclusive -> recordReconciliationPending(
+                uncertain,
+                SyncFailure(
+                    disposition = SyncFailureDisposition.RETRYABLE,
+                    code = result.code,
+                    phase = SyncErrorPhase.RECONCILIATION,
+                    safeMessage = SyncDiagnosticMessage.VERIFICATION_FAILED,
+                ),
+            )
+            is HealthReconciliationResult.Failed -> recordReconciliationPending(
+                uncertain,
+                result.failure,
+            )
+        }
+    }
+
     suspend fun confirmSyntheticStrengthSync(): Gate1SyncResult {
         val workout = SyntheticWorkoutFactory.create(clock)
         val accepted = checkNotNull(
@@ -130,6 +176,63 @@ class Gate1SyncCoordinator(
                 result.failure,
             )
         }
+    }
+
+    private suspend fun finalizeReconciliation(
+        uncertain: SyncLedgerEntry,
+        resolution: ReconciliationResolution,
+        externalRecordId: String?,
+        code: String,
+    ): Gate1SyncResult = try {
+        val persisted = when (resolution) {
+            ReconciliationResolution.EXISTING_ACCEPTED -> ledgerStore.reconcileAsAccepted(
+                uncertain.clientRecordId,
+                checkNotNull(externalRecordId),
+            )
+            ReconciliationResolution.RETRY_ALLOWED -> ledgerStore.reconcileForRetry(
+                uncertain.clientRecordId,
+            )
+        }
+        Gate1SyncResult.Reconciled(
+            clientRecordId = persisted.clientRecordId,
+            clientRecordVersion = persisted.clientRecordVersion,
+            ledgerRowsForClientRecordId = 1,
+            writeCountForClientRecordId = persisted.attemptCount,
+            externalRecordId = persisted.healthConnectRecordId,
+            resolution = resolution,
+            phase = SyncPhase.RECONCILIATION,
+            code = code,
+            localFinalizationStatus = LocalFinalizationStatus.FINALIZED,
+        )
+    } catch (failure: Exception) {
+        if (failure is CancellationException) throw failure
+        Gate1SyncResult.ReconciliationPending(
+            clientRecordId = uncertain.clientRecordId,
+            clientRecordVersion = uncertain.clientRecordVersion,
+            ledgerRowsForClientRecordId = 1,
+            writeCountForClientRecordId = uncertain.attemptCount,
+            externalRecordId = externalRecordId ?: uncertain.healthConnectRecordId,
+            phase = SyncPhase.RECONCILIATION,
+            code = "LOCAL_RECONCILIATION_FAILED",
+            localFinalizationStatus = LocalFinalizationStatus.FAILED,
+        )
+    }
+
+    private suspend fun recordReconciliationPending(
+        uncertain: SyncLedgerEntry,
+        failure: SyncFailure,
+    ): Gate1SyncResult {
+        val persisted = ledgerStore.recordReconciliationPending(uncertain.clientRecordId, failure)
+        return Gate1SyncResult.ReconciliationPending(
+            clientRecordId = persisted.clientRecordId,
+            clientRecordVersion = persisted.clientRecordVersion,
+            ledgerRowsForClientRecordId = 1,
+            writeCountForClientRecordId = persisted.attemptCount,
+            externalRecordId = persisted.healthConnectRecordId,
+            phase = SyncPhase.RECONCILIATION,
+            code = failure.code,
+            localFinalizationStatus = LocalFinalizationStatus.RECONCILIATION_PENDING,
+        )
     }
 
     private suspend fun finalizeConfirmation(verifying: SyncLedgerEntry): Gate1SyncResult = try {

@@ -246,27 +246,53 @@ class SyncLedgerStore(
             )
         }
 
-    /** Explicitly abandons uncertain migrated acceptance facts before a deliberate retry. */
-    suspend fun reconcileForRetry(clientRecordId: String): SyncLedgerEntry = mutate(clientRecordId) { row ->
-        check(row.status == SyncStatus.RECONCILIATION_PENDING) {
-            "Only a reconciliation-pending row can be reconciled."
+    override suspend fun recordReconciliationPending(
+        clientRecordId: String,
+        failure: SyncFailure,
+    ): SyncLedgerEntry = mutate(clientRecordId) { row ->
+        require(failure.disposition == SyncFailureDisposition.RETRYABLE) {
+            "Reconciliation uncertainty must remain retryable."
         }
+        require(failure.phase == SyncErrorPhase.RECONCILIATION) {
+            "Reconciliation uncertainty must use the reconciliation phase."
+        }
+        check(row.status in setOf(SyncStatus.WRITING, SyncStatus.RECONCILIATION_PENDING)) {
+            "Only an unknown write can remain reconciliation-pending."
+        }
+        val now = transitionTime(row)
         row.copy(
-            healthConnectRecordId = null,
-            status = SyncStatus.PENDING,
-            acceptedAtEpochMillis = null,
+            status = SyncStatus.RECONCILIATION_PENDING,
             confirmedAtEpochMillis = null,
-            updatedAtEpochMillis = transitionTime(row),
-        ).withoutError()
+            updatedAtEpochMillis = now,
+            lastErrorCode = failure.code,
+            lastErrorPhase = failure.phase,
+            lastErrorAtEpochMillis = now,
+            lastErrorMessage = failure.safeMessage?.durableValue,
+        )
     }
 
-    /** Confirms that a reconciliation-pending row represents an already accepted record. */
-    suspend fun reconcileAsAccepted(
+    /** Explicitly abandons uncertainty before a deliberate retry after authoritative absence. */
+    override suspend fun reconcileForRetry(clientRecordId: String): SyncLedgerEntry =
+        mutate(clientRecordId) { row ->
+            check(row.status in setOf(SyncStatus.WRITING, SyncStatus.RECONCILIATION_PENDING)) {
+                "Only an unknown write can be reconciled."
+            }
+            row.copy(
+                healthConnectRecordId = null,
+                status = SyncStatus.PENDING,
+                acceptedAtEpochMillis = null,
+                confirmedAtEpochMillis = null,
+                updatedAtEpochMillis = transitionTime(row),
+            ).withoutError()
+        }
+
+    /** Records that deterministic reconciliation found the external record. */
+    override suspend fun reconcileAsAccepted(
         clientRecordId: String,
-        healthConnectRecordId: String? = null,
+        healthConnectRecordId: String?,
     ): SyncLedgerEntry = mutate(clientRecordId) { row ->
-        check(row.status == SyncStatus.RECONCILIATION_PENDING) {
-            "Only a reconciliation-pending row can be reconciled."
+        check(row.status in setOf(SyncStatus.WRITING, SyncStatus.RECONCILIATION_PENDING)) {
+            "Only an unknown write can be reconciled."
         }
         val resolvedHealthId = healthConnectRecordId ?: row.healthConnectRecordId
         check(resolvedHealthId != null) { "Accepted reconciliation requires a Health Connect record ID." }

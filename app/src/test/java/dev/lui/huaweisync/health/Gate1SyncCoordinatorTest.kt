@@ -544,6 +544,217 @@ class Gate1SyncCoordinatorTest {
     }
 
     @Test
+    fun reconciliationFindsExistingRecordWithoutBlindReinsertion() = runTest {
+        val ledger = database.syncLedgerStore(LedgerClock { 100L })
+        val uncertainLedger = object : Gate1SyncLedger by ledger {
+            override suspend fun recordAccepted(clientRecordId: String, healthConnectRecordId: String?) =
+                throw IllegalStateException("database unavailable")
+        }
+        Gate1SyncCoordinator(
+            ledgerStore = uncertainLedger,
+            writer = writer,
+        ).runSyntheticStrengthSync()
+        val coordinator = Gate1SyncCoordinator(
+            ledgerStore = ledger,
+            writer = writer,
+            reconciler = HealthWorkoutReconciler { request ->
+                assertEquals(SyntheticWorkoutFactory.CLIENT_RECORD_ID, request.clientRecordId)
+                assertEquals(1L, request.clientRecordVersion)
+                assertEquals("health-connect-id-1", request.externalRecordId)
+                HealthReconciliationResult.Found("health-connect-id-reconciled")
+            },
+        )
+
+        val result = coordinator.reconcileSyntheticStrengthSync()
+
+        assertTrue(result is Gate1SyncResult.Reconciled)
+        result as Gate1SyncResult.Reconciled
+        assertEquals(ReconciliationResolution.EXISTING_ACCEPTED, result.resolution)
+        assertEquals("RECONCILED_EXISTING", result.code)
+        assertEquals("health-connect-id-reconciled", result.externalRecordId)
+        assertEquals(1, writer.records.size)
+        val durable = ledger.findByClientRecordId(result.clientRecordId)!!
+        assertEquals(SyncStatus.SYNCED, durable.status)
+        assertEquals(1, durable.attemptCount)
+        assertEquals(100L, durable.acceptedAtEpochMillis)
+    }
+
+    @Test
+    fun onlyAuthoritativeAbsenceUnlocksAWriteRetry() = runTest {
+        val ledger = database.syncLedgerStore(LedgerClock { 100L })
+        val failingLedger = object : Gate1SyncLedger by ledger {
+            override suspend fun recordAccepted(clientRecordId: String, healthConnectRecordId: String?) =
+                throw IllegalStateException("database unavailable")
+            override suspend fun recordAcceptanceUncertain(clientRecordId: String, healthConnectRecordId: String?) =
+                throw IllegalStateException("database still unavailable")
+        }
+        val stranded = Gate1SyncCoordinator(failingLedger, writer)
+        stranded.runSyntheticStrengthSync()
+        val coordinator = Gate1SyncCoordinator(
+            ledgerStore = ledger,
+            writer = writer,
+            reconciler = HealthWorkoutReconciler {
+                HealthReconciliationResult.AuthoritativelyAbsent("HEALTH_RECORD_NOT_FOUND")
+            },
+        )
+
+        val reconciled = coordinator.reconcileSyntheticStrengthSync()
+        val retried = coordinator.runSyntheticStrengthSync()
+
+        assertTrue(reconciled is Gate1SyncResult.Reconciled)
+        reconciled as Gate1SyncResult.Reconciled
+        assertEquals(ReconciliationResolution.RETRY_ALLOWED, reconciled.resolution)
+        assertEquals("HEALTH_RECORD_NOT_FOUND", reconciled.code)
+        assertTrue(retried is Gate1SyncResult.Completed)
+        assertEquals(2, writer.records.size)
+        val durable = ledger.findByClientRecordId(reconciled.clientRecordId)!!
+        assertEquals(SyncStatus.SYNCED, durable.status)
+        assertEquals(2, durable.attemptCount)
+    }
+
+    @Test
+    fun inconclusiveAndFailedReconciliationNeverUnlockReinsertion() = runTest {
+        val ledger = database.syncLedgerStore(LedgerClock { 100L })
+        val failingLedger = object : Gate1SyncLedger by ledger {
+            override suspend fun recordAccepted(clientRecordId: String, healthConnectRecordId: String?) =
+                throw IllegalStateException("database unavailable")
+            override suspend fun recordAcceptanceUncertain(clientRecordId: String, healthConnectRecordId: String?) =
+                throw IllegalStateException("database still unavailable")
+        }
+        Gate1SyncCoordinator(failingLedger, writer).runSyntheticStrengthSync()
+        val outcomes = ArrayDeque<HealthReconciliationResult>().apply {
+            add(HealthReconciliationResult.Inconclusive("RECONCILIATION_INCONCLUSIVE"))
+            add(
+                HealthReconciliationResult.Failed(
+                    SyncFailure(
+                        disposition = SyncFailureDisposition.RETRYABLE,
+                        code = "RECONCILIATION_READ_FAILED",
+                        phase = SyncErrorPhase.RECONCILIATION,
+                        safeMessage = SyncDiagnosticMessage.VERIFICATION_FAILED,
+                    ),
+                ),
+            )
+        }
+        val coordinator = Gate1SyncCoordinator(
+            ledgerStore = ledger,
+            writer = writer,
+            reconciler = HealthWorkoutReconciler { outcomes.removeFirst() },
+        )
+
+        val inconclusive = coordinator.reconcileSyntheticStrengthSync()
+        val failed = coordinator.reconcileSyntheticStrengthSync()
+
+        assertTrue(inconclusive is Gate1SyncResult.ReconciliationPending)
+        assertTrue(failed is Gate1SyncResult.ReconciliationPending)
+        assertEquals("RECONCILIATION_READ_FAILED", (failed as Gate1SyncResult.ReconciliationPending).code)
+        val durable = ledger.findByClientRecordId(failed.clientRecordId)!!
+        assertEquals(SyncStatus.RECONCILIATION_PENDING, durable.status)
+        assertEquals(1, durable.attemptCount)
+        assertNull(durable.acceptedAtEpochMillis)
+        assertEquals(1, writer.records.size)
+        val blockedRetry = runCatching { coordinator.runSyntheticStrengthSync() }
+        assertTrue(blockedRetry.isFailure)
+        assertEquals(1, writer.records.size)
+    }
+
+    @Test
+    fun localReconciliationFinalizationFailureRemainsStructuredAndQuarantined() = runTest {
+        val realLedger = database.syncLedgerStore(LedgerClock { 100L })
+        val strandedLedger = object : Gate1SyncLedger by realLedger {
+            override suspend fun recordAccepted(clientRecordId: String, healthConnectRecordId: String?) =
+                throw IllegalStateException("database unavailable")
+            override suspend fun recordAcceptanceUncertain(clientRecordId: String, healthConnectRecordId: String?) =
+                throw IllegalStateException("database still unavailable")
+        }
+        Gate1SyncCoordinator(strandedLedger, writer).runSyntheticStrengthSync()
+        val failingFinalization = object : Gate1SyncLedger by realLedger {
+            override suspend fun reconcileForRetry(clientRecordId: String) =
+                throw IllegalStateException("database unavailable")
+        }
+        val coordinator = Gate1SyncCoordinator(
+            ledgerStore = failingFinalization,
+            writer = writer,
+            reconciler = HealthWorkoutReconciler {
+                HealthReconciliationResult.AuthoritativelyAbsent("HEALTH_RECORD_NOT_FOUND")
+            },
+        )
+
+        val result = coordinator.reconcileSyntheticStrengthSync()
+
+        assertTrue(result is Gate1SyncResult.ReconciliationPending)
+        result as Gate1SyncResult.ReconciliationPending
+        assertEquals("LOCAL_RECONCILIATION_FAILED", result.code)
+        assertEquals(LocalFinalizationStatus.FAILED, result.localFinalizationStatus)
+        val durable = realLedger.findByClientRecordId(result.clientRecordId)!!
+        assertEquals(SyncStatus.WRITING, durable.status)
+        assertEquals(1, durable.attemptCount)
+        assertNull(durable.acceptedAtEpochMillis)
+        assertEquals(1, writer.records.size)
+    }
+
+    @Test
+    fun unexpectedReconcilerFailureBubblesAndPreservesUnknownWrite() = runTest {
+        val ledger = database.syncLedgerStore(LedgerClock { 100L })
+        val strandedLedger = object : Gate1SyncLedger by ledger {
+            override suspend fun recordAccepted(clientRecordId: String, healthConnectRecordId: String?) =
+                throw IllegalStateException("database unavailable")
+            override suspend fun recordAcceptanceUncertain(clientRecordId: String, healthConnectRecordId: String?) =
+                throw IllegalStateException("database still unavailable")
+        }
+        Gate1SyncCoordinator(strandedLedger, writer).runSyntheticStrengthSync()
+        val expected = IllegalStateException("reconciliation adapter unavailable")
+        val coordinator = Gate1SyncCoordinator(
+            ledgerStore = ledger,
+            writer = writer,
+            reconciler = HealthWorkoutReconciler { throw expected },
+        )
+
+        val observed = try {
+            coordinator.reconcileSyntheticStrengthSync()
+            throw AssertionError("Expected reconciler failure")
+        } catch (failure: IllegalStateException) {
+            failure
+        }
+
+        assertSame(expected, observed)
+        val durable = ledger.findByClientRecordId(SyntheticWorkoutFactory.CLIENT_RECORD_ID)!!
+        assertEquals(SyncStatus.WRITING, durable.status)
+        assertEquals(1, durable.attemptCount)
+        assertNull(durable.acceptedAtEpochMillis)
+        assertEquals(1, writer.records.size)
+    }
+
+    @Test
+    fun malformedReconciliationCodeIsRejectedAtContractBoundary() {
+        val observed = try {
+            HealthReconciliationResult.AuthoritativelyAbsent("raw response text")
+            throw AssertionError("Expected malformed reconciliation code rejection")
+        } catch (error: IllegalArgumentException) {
+            error
+        }
+
+        assertTrue(observed.message!!.contains("stable uppercase identifiers"))
+    }
+
+    @Test
+    fun invalidPermanentReconciliationFailureIsRejectedAtContractBoundary() {
+        val failure = SyncFailure(
+            disposition = SyncFailureDisposition.PERMANENT,
+            code = "PERMANENT_RECONCILIATION_FAILURE",
+            phase = SyncErrorPhase.RECONCILIATION,
+        )
+
+        val observed = try {
+            HealthReconciliationResult.Failed(failure)
+            throw AssertionError("Expected permanent reconciliation failure rejection")
+        } catch (error: IllegalArgumentException) {
+            error
+        }
+
+        assertTrue(observed.message!!.contains("must remain retryable"))
+    }
+
+    @Test
     fun invalidPermanentConfirmationFailureIsRejectedAtContractBoundary() {
         val failure = SyncFailure(
             disposition = SyncFailureDisposition.PERMANENT,

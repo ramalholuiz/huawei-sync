@@ -331,6 +331,60 @@ class SyncLedgerStoreTest {
     }
 
     @Test
+    fun strandedWritingCanBeQuarantinedWithoutInventingAcceptanceFacts() = runTest {
+        store.prepare(workout())
+        val writing = store.beginWrite(CLIENT_ID)
+        clock.now = 200L
+
+        val pending = store.recordReconciliationPending(
+            CLIENT_ID,
+            SyncFailure(
+                disposition = SyncFailureDisposition.RETRYABLE,
+                code = "RECONCILIATION_INCONCLUSIVE",
+                phase = SyncErrorPhase.RECONCILIATION,
+                safeMessage = SyncDiagnosticMessage.VERIFICATION_FAILED,
+            ),
+        )
+
+        assertEquals(SyncStatus.RECONCILIATION_PENDING, pending.status)
+        assertEquals(writing.clientRecordId, pending.clientRecordId)
+        assertEquals(writing.clientRecordVersion, pending.clientRecordVersion)
+        assertEquals(1, pending.attemptCount)
+        assertNull(pending.acceptedAtEpochMillis)
+        assertNull(pending.healthConnectRecordId)
+        assertEquals("RECONCILIATION_INCONCLUSIVE", pending.lastErrorCode)
+        assertEquals(SyncErrorPhase.RECONCILIATION, pending.lastErrorPhase)
+        assertEquals(200L, pending.lastErrorAtEpochMillis)
+
+        clock.now = 300L
+        val found = store.reconcileAsAccepted(CLIENT_ID, "health-connect-found")
+        assertEquals(SyncStatus.SYNCED, found.status)
+        assertEquals("health-connect-found", found.healthConnectRecordId)
+        assertEquals(300L, found.acceptedAtEpochMillis)
+        assertEquals(1, found.attemptCount)
+        assertNull(found.lastErrorCode)
+    }
+
+    @Test
+    fun invalidReconciliationTransitionsRollBackWithoutUnlockingRetry() = runTest {
+        val prepared = store.prepare(workout())
+        val invalidFailure = SyncFailure(
+            disposition = SyncFailureDisposition.PERMANENT,
+            code = "RECONCILIATION_PERMANENT",
+            phase = SyncErrorPhase.RECONCILIATION,
+        )
+
+        expectSuspendFailure(IllegalArgumentException::class.java) {
+            store.recordReconciliationPending(CLIENT_ID, invalidFailure)
+        }
+        expectSuspendFailure(IllegalStateException::class.java) {
+            store.reconcileForRetry(CLIENT_ID)
+        }
+
+        assertEquals(prepared, store.findByClientRecordId(CLIENT_ID))
+    }
+
+    @Test
     fun concurrentWriteAttemptsAreSerializedWithoutLostUpdates() = runTest {
         store.prepare(workout())
 

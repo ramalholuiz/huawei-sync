@@ -9,6 +9,11 @@ enum class ConfirmationPendingReason {
     FAILURE,
 }
 
+enum class ReconciliationResolution {
+    EXISTING_ACCEPTED,
+    RETRY_ALLOWED,
+}
+
 sealed interface Gate1SyncResult {
     val clientRecordId: String
     val clientRecordVersion: Long
@@ -60,6 +65,29 @@ sealed interface Gate1SyncResult {
         override val writeCountForClientRecordId: Int,
         val externalRecordId: String?,
         val reason: ConfirmationPendingReason,
+        val phase: SyncPhase,
+        val code: String,
+        val localFinalizationStatus: LocalFinalizationStatus,
+    ) : Gate1SyncResult
+
+    data class Reconciled(
+        override val clientRecordId: String,
+        override val clientRecordVersion: Long,
+        override val ledgerRowsForClientRecordId: Int,
+        override val writeCountForClientRecordId: Int,
+        val externalRecordId: String?,
+        val resolution: ReconciliationResolution,
+        val phase: SyncPhase,
+        val code: String,
+        val localFinalizationStatus: LocalFinalizationStatus,
+    ) : Gate1SyncResult
+
+    data class ReconciliationPending(
+        override val clientRecordId: String,
+        override val clientRecordVersion: Long,
+        override val ledgerRowsForClientRecordId: Int,
+        override val writeCountForClientRecordId: Int,
+        val externalRecordId: String?,
         val phase: SyncPhase,
         val code: String,
         val localFinalizationStatus: LocalFinalizationStatus,
