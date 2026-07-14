@@ -1,6 +1,10 @@
 package dev.lui.huaweisync.health
 
 import dev.lui.huaweisync.data.PreparedLedgerWorkout
+import dev.lui.huaweisync.data.SyncDiagnosticMessage
+import dev.lui.huaweisync.data.SyncErrorPhase
+import dev.lui.huaweisync.data.SyncFailure
+import dev.lui.huaweisync.data.SyncFailureDisposition
 import dev.lui.huaweisync.data.SyncLedgerEntry
 import dev.lui.huaweisync.data.SyncStatus
 import dev.lui.huaweisync.domain.PreviousWorkoutMetadata
@@ -14,6 +18,9 @@ class Gate1SyncCoordinator(
     private val writer: HealthWorkoutWriter,
     private val clock: Clock = Clock.systemDefaultZone(),
     private val preflight: SyncPreflight = SyncPreflight { SyncPreflightResult.Ready },
+    private val confirmer: HealthWorkoutConfirmer = HealthWorkoutConfirmer {
+        HealthConfirmationResult.Inconclusive("CONFIRMER_NOT_CONFIGURED")
+    },
 ) {
     suspend fun runSyntheticStrengthSync(): Gate1SyncResult {
         val workout = SyntheticWorkoutFactory.create(clock)
@@ -88,6 +95,102 @@ class Gate1SyncCoordinator(
                 writeResult.externalRecordId,
             )
         }
+    }
+
+    suspend fun confirmSyntheticStrengthSync(): Gate1SyncResult {
+        val workout = SyntheticWorkoutFactory.create(clock)
+        val accepted = checkNotNull(
+            ledgerStore.findBySource(workout.source.stableName, workout.sourceWorkoutId),
+        ) { "Confirmation requires a prepared ledger row." }
+        check(accepted.acceptedAtEpochMillis != null) {
+            "Confirmation requires a recorded external acceptance."
+        }
+
+        val verifying = ledgerStore.beginVerification(accepted.clientRecordId)
+        val request = HealthConfirmationRequest(
+            clientRecordId = verifying.clientRecordId,
+            clientRecordVersion = verifying.clientRecordVersion,
+            externalRecordId = verifying.healthConnectRecordId,
+        )
+        return when (val result = confirmer.confirm(request)) {
+            HealthConfirmationResult.Confirmed -> finalizeConfirmation(verifying)
+            is HealthConfirmationResult.Absent -> recordConfirmationPending(
+                verifying,
+                ConfirmationPendingReason.ABSENT,
+                result.code,
+            )
+            is HealthConfirmationResult.Inconclusive -> recordConfirmationPending(
+                verifying,
+                ConfirmationPendingReason.INCONCLUSIVE,
+                result.code,
+            )
+            is HealthConfirmationResult.Failed -> recordConfirmationPending(
+                verifying,
+                ConfirmationPendingReason.FAILURE,
+                result.failure,
+            )
+        }
+    }
+
+    private suspend fun finalizeConfirmation(verifying: SyncLedgerEntry): Gate1SyncResult = try {
+        val confirmed = ledgerStore.confirm(verifying.clientRecordId)
+        Gate1SyncResult.Confirmed(
+            clientRecordId = confirmed.clientRecordId,
+            clientRecordVersion = confirmed.clientRecordVersion,
+            ledgerRowsForClientRecordId = 1,
+            writeCountForClientRecordId = confirmed.attemptCount,
+            externalRecordId = confirmed.healthConnectRecordId,
+            phase = SyncPhase.CONFIRMATION,
+            code = "CONFIRMED",
+            localFinalizationStatus = LocalFinalizationStatus.FINALIZED,
+        )
+    } catch (failure: Exception) {
+        if (failure is CancellationException) throw failure
+        Gate1SyncResult.ConfirmationPending(
+            clientRecordId = verifying.clientRecordId,
+            clientRecordVersion = verifying.clientRecordVersion,
+            ledgerRowsForClientRecordId = 1,
+            writeCountForClientRecordId = verifying.attemptCount,
+            externalRecordId = verifying.healthConnectRecordId,
+            reason = ConfirmationPendingReason.FAILURE,
+            phase = SyncPhase.CONFIRMATION,
+            code = "LOCAL_CONFIRMATION_FAILED",
+            localFinalizationStatus = LocalFinalizationStatus.FAILED,
+        )
+    }
+
+    private suspend fun recordConfirmationPending(
+        verifying: SyncLedgerEntry,
+        reason: ConfirmationPendingReason,
+        code: String,
+    ): Gate1SyncResult = recordConfirmationPending(
+        verifying = verifying,
+        reason = reason,
+        failure = SyncFailure(
+            disposition = SyncFailureDisposition.RETRYABLE,
+            code = code,
+            phase = SyncErrorPhase.VERIFICATION,
+            safeMessage = SyncDiagnosticMessage.VERIFICATION_FAILED,
+        ),
+    )
+
+    private suspend fun recordConfirmationPending(
+        verifying: SyncLedgerEntry,
+        reason: ConfirmationPendingReason,
+        failure: SyncFailure,
+    ): Gate1SyncResult {
+        val persisted = ledgerStore.recordFailure(verifying.clientRecordId, failure)
+        return Gate1SyncResult.ConfirmationPending(
+            clientRecordId = persisted.clientRecordId,
+            clientRecordVersion = persisted.clientRecordVersion,
+            ledgerRowsForClientRecordId = 1,
+            writeCountForClientRecordId = persisted.attemptCount,
+            externalRecordId = persisted.healthConnectRecordId,
+            reason = reason,
+            phase = SyncPhase.CONFIRMATION,
+            code = failure.code,
+            localFinalizationStatus = LocalFinalizationStatus.FINALIZED,
+        )
     }
 
     private suspend fun finalizeAcceptedWrite(

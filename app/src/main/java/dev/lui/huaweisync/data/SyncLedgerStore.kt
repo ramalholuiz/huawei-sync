@@ -164,7 +164,7 @@ class SyncLedgerStore(
         )
     }
 
-    suspend fun beginVerification(clientRecordId: String): SyncLedgerEntry = mutate(clientRecordId) { row ->
+    override suspend fun beginVerification(clientRecordId: String): SyncLedgerEntry = mutate(clientRecordId) { row ->
         check(row.acceptedAtEpochMillis != null) { "Verification requires a recorded acceptance." }
         check(
             row.status in setOf(
@@ -181,7 +181,7 @@ class SyncLedgerStore(
         ).withoutError()
     }
 
-    suspend fun confirm(clientRecordId: String): SyncLedgerEntry = mutate(clientRecordId) { row ->
+    override suspend fun confirm(clientRecordId: String): SyncLedgerEntry = mutate(clientRecordId) { row ->
         check(row.status == SyncStatus.VERIFICATION_PENDING) {
             "Confirmation requires verification to be pending."
         }

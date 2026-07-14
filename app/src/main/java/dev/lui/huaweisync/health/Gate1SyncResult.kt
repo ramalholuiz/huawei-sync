@@ -3,6 +3,12 @@ package dev.lui.huaweisync.health
 import dev.lui.huaweisync.data.SyncBlockReason
 import dev.lui.huaweisync.data.SyncFailureDisposition
 
+enum class ConfirmationPendingReason {
+    ABSENT,
+    INCONCLUSIVE,
+    FAILURE,
+}
+
 sealed interface Gate1SyncResult {
     val clientRecordId: String
     val clientRecordVersion: Long
@@ -34,6 +40,29 @@ sealed interface Gate1SyncResult {
         val disposition: SyncFailureDisposition,
         val phase: SyncPhase,
         val code: String,
+    ) : Gate1SyncResult
+
+    data class Confirmed(
+        override val clientRecordId: String,
+        override val clientRecordVersion: Long,
+        override val ledgerRowsForClientRecordId: Int,
+        override val writeCountForClientRecordId: Int,
+        val externalRecordId: String?,
+        val phase: SyncPhase,
+        val code: String,
+        val localFinalizationStatus: LocalFinalizationStatus,
+    ) : Gate1SyncResult
+
+    data class ConfirmationPending(
+        override val clientRecordId: String,
+        override val clientRecordVersion: Long,
+        override val ledgerRowsForClientRecordId: Int,
+        override val writeCountForClientRecordId: Int,
+        val externalRecordId: String?,
+        val reason: ConfirmationPendingReason,
+        val phase: SyncPhase,
+        val code: String,
+        val localFinalizationStatus: LocalFinalizationStatus,
     ) : Gate1SyncResult
 
     /** The external write was accepted; local state needs recovery or reconciliation. */

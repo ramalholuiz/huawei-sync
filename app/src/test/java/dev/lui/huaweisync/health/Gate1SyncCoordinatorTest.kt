@@ -365,6 +365,226 @@ class Gate1SyncCoordinatorTest {
         assertEquals(100L, ledger.acceptedAtEpochMillis)
     }
 
+    @Test
+    fun confirmationIsSeparateAndOnlyConfirmedAdvancesToVerified() = runTest {
+        val ledger = database.syncLedgerStore(LedgerClock { 100L })
+        var confirmationCalls = 0
+        val coordinator = Gate1SyncCoordinator(
+            ledgerStore = ledger,
+            writer = writer,
+            confirmer = HealthWorkoutConfirmer { request ->
+                confirmationCalls += 1
+                assertEquals(SyntheticWorkoutFactory.CLIENT_RECORD_ID, request.clientRecordId)
+                assertEquals(1L, request.clientRecordVersion)
+                assertEquals("health-connect-id-1", request.externalRecordId)
+                HealthConfirmationResult.Confirmed
+            },
+        )
+
+        val writeResult = coordinator.runSyntheticStrengthSync()
+        val afterWrite = ledger.findByClientRecordId(SyntheticWorkoutFactory.CLIENT_RECORD_ID)!!
+        assertTrue(writeResult is Gate1SyncResult.Completed)
+        assertEquals(SyncStatus.SYNCED, afterWrite.status)
+        assertNull(afterWrite.confirmedAtEpochMillis)
+        assertEquals(0, confirmationCalls)
+
+        val confirmation = coordinator.confirmSyntheticStrengthSync()
+
+        assertTrue(confirmation is Gate1SyncResult.Confirmed)
+        confirmation as Gate1SyncResult.Confirmed
+        assertEquals(SyncPhase.CONFIRMATION, confirmation.phase)
+        assertEquals("CONFIRMED", confirmation.code)
+        assertEquals("health-connect-id-1", confirmation.externalRecordId)
+        assertEquals(1, confirmationCalls)
+        assertEquals(1, writer.records.size)
+        val durable = ledger.findByClientRecordId(confirmation.clientRecordId)!!
+        assertEquals(SyncStatus.VERIFIED, durable.status)
+        assertEquals(100L, durable.acceptedAtEpochMillis)
+        assertEquals(100L, durable.confirmedAtEpochMillis)
+        assertEquals(1, durable.attemptCount)
+    }
+
+    @Test
+    fun absentConfirmationPreservesAcceptanceAndCanBeRetriedWithoutWriting() = runTest {
+        val ledger = database.syncLedgerStore(LedgerClock { 100L })
+        var confirmationCalls = 0
+        val coordinator = Gate1SyncCoordinator(
+            ledgerStore = ledger,
+            writer = writer,
+            confirmer = HealthWorkoutConfirmer {
+                confirmationCalls += 1
+                if (confirmationCalls == 1) {
+                    HealthConfirmationResult.Absent("HEALTH_RECORD_ABSENT")
+                } else {
+                    HealthConfirmationResult.Confirmed
+                }
+            },
+        )
+        coordinator.runSyntheticStrengthSync()
+
+        val absent = coordinator.confirmSyntheticStrengthSync()
+
+        assertTrue(absent is Gate1SyncResult.ConfirmationPending)
+        absent as Gate1SyncResult.ConfirmationPending
+        assertEquals(ConfirmationPendingReason.ABSENT, absent.reason)
+        assertEquals("HEALTH_RECORD_ABSENT", absent.code)
+        assertEquals(SyncPhase.CONFIRMATION, absent.phase)
+        assertEquals("health-connect-id-1", absent.externalRecordId)
+        val afterAbsent = ledger.findByClientRecordId(absent.clientRecordId)!!
+        assertEquals(SyncStatus.RETRYABLE_ERROR, afterAbsent.status)
+        assertEquals(100L, afterAbsent.acceptedAtEpochMillis)
+        assertEquals("health-connect-id-1", afterAbsent.healthConnectRecordId)
+        assertNull(afterAbsent.confirmedAtEpochMillis)
+        assertEquals(1, afterAbsent.attemptCount)
+
+        val confirmed = coordinator.confirmSyntheticStrengthSync()
+
+        assertTrue(confirmed is Gate1SyncResult.Confirmed)
+        assertEquals(2, confirmationCalls)
+        assertEquals(1, writer.records.size)
+        assertEquals(SyncStatus.VERIFIED, ledger.findByClientRecordId(absent.clientRecordId)!!.status)
+    }
+
+    @Test
+    fun inconclusiveAndFailedConfirmationRemainConfirmationRetryPaths() = runTest {
+        val ledger = database.syncLedgerStore(LedgerClock { 100L })
+        val outcomes = ArrayDeque<HealthConfirmationResult>().apply {
+            add(HealthConfirmationResult.Inconclusive("CONFIRMATION_INCONCLUSIVE"))
+            add(
+                HealthConfirmationResult.Failed(
+                    SyncFailure(
+                        disposition = SyncFailureDisposition.RETRYABLE,
+                        code = "CONFIRMATION_READ_FAILED",
+                        phase = SyncErrorPhase.VERIFICATION,
+                        safeMessage = SyncDiagnosticMessage.VERIFICATION_FAILED,
+                    ),
+                ),
+            )
+        }
+        val coordinator = Gate1SyncCoordinator(
+            ledgerStore = ledger,
+            writer = writer,
+            confirmer = HealthWorkoutConfirmer { outcomes.removeFirst() },
+        )
+        coordinator.runSyntheticStrengthSync()
+
+        val inconclusive = coordinator.confirmSyntheticStrengthSync() as Gate1SyncResult.ConfirmationPending
+        assertEquals(ConfirmationPendingReason.INCONCLUSIVE, inconclusive.reason)
+        assertEquals("CONFIRMATION_INCONCLUSIVE", inconclusive.code)
+        val afterInconclusive = ledger.findByClientRecordId(inconclusive.clientRecordId)!!
+        assertEquals(100L, afterInconclusive.acceptedAtEpochMillis)
+        assertEquals(1, afterInconclusive.attemptCount)
+
+        val failed = coordinator.confirmSyntheticStrengthSync() as Gate1SyncResult.ConfirmationPending
+        assertEquals(ConfirmationPendingReason.FAILURE, failed.reason)
+        assertEquals("CONFIRMATION_READ_FAILED", failed.code)
+        val afterFailure = ledger.findByClientRecordId(failed.clientRecordId)!!
+        assertEquals(SyncStatus.RETRYABLE_ERROR, afterFailure.status)
+        assertEquals(100L, afterFailure.acceptedAtEpochMillis)
+        assertEquals("health-connect-id-1", afterFailure.healthConnectRecordId)
+        assertNull(afterFailure.confirmedAtEpochMillis)
+        assertEquals(1, writer.records.size)
+    }
+
+    @Test
+    fun localConfirmationFinalizationFailureIsStructuredAndLeavesVerificationPending() = runTest {
+        val realLedger = database.syncLedgerStore(LedgerClock { 100L })
+        val failingLedger = object : Gate1SyncLedger by realLedger {
+            override suspend fun confirm(clientRecordId: String) =
+                throw IllegalStateException("database unavailable")
+        }
+        val coordinator = Gate1SyncCoordinator(
+            ledgerStore = failingLedger,
+            writer = writer,
+            confirmer = HealthWorkoutConfirmer { HealthConfirmationResult.Confirmed },
+        )
+        coordinator.runSyntheticStrengthSync()
+
+        val result = coordinator.confirmSyntheticStrengthSync()
+
+        assertTrue(result is Gate1SyncResult.ConfirmationPending)
+        result as Gate1SyncResult.ConfirmationPending
+        assertEquals(ConfirmationPendingReason.FAILURE, result.reason)
+        assertEquals("LOCAL_CONFIRMATION_FAILED", result.code)
+        assertEquals(LocalFinalizationStatus.FAILED, result.localFinalizationStatus)
+        assertEquals("health-connect-id-1", result.externalRecordId)
+        val durable = realLedger.findByClientRecordId(result.clientRecordId)!!
+        assertEquals(SyncStatus.VERIFICATION_PENDING, durable.status)
+        assertEquals(100L, durable.acceptedAtEpochMillis)
+        assertEquals("health-connect-id-1", durable.healthConnectRecordId)
+        assertNull(durable.confirmedAtEpochMillis)
+        assertEquals(1, durable.attemptCount)
+    }
+
+    @Test
+    fun unexpectedConfirmerFailureBubblesWithoutErasingAcceptance() = runTest {
+        val ledger = database.syncLedgerStore(LedgerClock { 100L })
+        val expected = IllegalStateException("confirmation adapter unavailable")
+        val coordinator = Gate1SyncCoordinator(
+            ledgerStore = ledger,
+            writer = writer,
+            confirmer = HealthWorkoutConfirmer { throw expected },
+        )
+        coordinator.runSyntheticStrengthSync()
+
+        val observed = try {
+            coordinator.confirmSyntheticStrengthSync()
+            throw AssertionError("Expected confirmer failure")
+        } catch (failure: IllegalStateException) {
+            failure
+        }
+
+        assertSame(expected, observed)
+        val durable = ledger.findByClientRecordId(SyntheticWorkoutFactory.CLIENT_RECORD_ID)!!
+        assertEquals(SyncStatus.VERIFICATION_PENDING, durable.status)
+        assertEquals(100L, durable.acceptedAtEpochMillis)
+        assertEquals("health-connect-id-1", durable.healthConnectRecordId)
+        assertNull(durable.confirmedAtEpochMillis)
+        assertEquals(1, writer.records.size)
+    }
+
+    @Test
+    fun invalidPermanentConfirmationFailureIsRejectedAtContractBoundary() {
+        val failure = SyncFailure(
+            disposition = SyncFailureDisposition.PERMANENT,
+            code = "PERMANENT_CONFIRMATION_FAILURE",
+            phase = SyncErrorPhase.VERIFICATION,
+        )
+
+        val observed = try {
+            HealthConfirmationResult.Failed(failure)
+            throw AssertionError("Expected permanent confirmation failure rejection")
+        } catch (error: IllegalArgumentException) {
+            error
+        }
+
+        assertTrue(observed.message!!.contains("must remain retryable"))
+    }
+
+    @Test
+    fun confirmationWithoutAcceptedWriteIsRejectedWithoutCallingDependencies() = runTest {
+        var confirmationCalls = 0
+        val coordinator = Gate1SyncCoordinator(
+            ledgerStore = database.syncLedgerStore(LedgerClock { 100L }),
+            writer = writer,
+            confirmer = HealthWorkoutConfirmer {
+                confirmationCalls += 1
+                HealthConfirmationResult.Confirmed
+            },
+        )
+
+        val observed = try {
+            coordinator.confirmSyntheticStrengthSync()
+            throw AssertionError("Expected missing acceptance rejection")
+        } catch (failure: IllegalStateException) {
+            failure
+        }
+
+        assertTrue(observed.message!!.contains("prepared ledger row"))
+        assertEquals(0, confirmationCalls)
+        assertEquals(0, writer.records.size)
+    }
+
     private suspend fun assertWriteFailure(
         failure: SyncFailure,
         expectedStatus: SyncStatus,
