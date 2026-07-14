@@ -4,45 +4,60 @@ Status values: `TODO`, `PASS`, `BLOCKED`.
 
 ## Gate 1: Health Connect synthetic write
 
-Status: TODO
+Status: BLOCKED
 
 Purpose: write one synthetic strength-training `ExerciseSessionRecord` to Health Connect idempotently.
 
 Checklist:
 
-- [ ] Android Kotlin + Jetpack Compose project exists.
-- [ ] Health Connect availability is detected.
-- [ ] Required Health Connect permissions for exercise sessions are requested.
-- [ ] Synthetic strength `ExerciseSessionRecord` is inserted.
-- [ ] Synthetic record uses deterministic `metadata.clientRecordId` reproducible after reinstall.
-- [ ] `metadata.clientRecordVersion` strategy is defined.
-- [ ] Room sync ledger exists from this gate onward.
-- [ ] Repeated insert/update does not create duplicates.
-- [ ] No `StepsRecord`, WorkManager, Strava, or additional metrics are implemented in this gate.
+- [x] Android Kotlin + Jetpack Compose project exists.
+- [x] Health Connect availability is detected.
+- [x] Required Health Connect permissions for exercise sessions are requested.
+- [x] Synthetic strength `ExerciseSessionRecord` write path is implemented.
+- [x] Synthetic record uses deterministic `metadata.clientRecordId` reproducible after reinstall.
+- [x] `metadata.clientRecordVersion` strategy is defined.
+- [x] Room sync ledger exists from this gate onward.
+- [x] Repeated insert/update is covered by a three-run idempotency test against the Room ledger.
+- [x] No `StepsRecord`, WorkManager, Strava, or additional workout metrics are implemented in Gate 1 app code.
 
-Required ledger fields:
+Ledger fields required from Gate 1:
 
-- [ ] `sourceProvider`
-- [ ] `sourceRecordId`
-- [ ] `deterministicClientRecordId`
-- [ ] `sourceModifiedAt` or `sourceVersion`
-- [ ] `contentHash`
-- [ ] `healthConnectRecordId`
-- [ ] `syncStatus`
-- [ ] `attemptCount`
-- [ ] `lastError`
-- [ ] `createdAt`
-- [ ] `updatedAt`
+- [x] `clientRecordId`
+- [x] source
+- [x] source workout id
+- [x] dedupe key
+- [x] client record version
+- [x] Health Connect record id when available
+- [x] last synced timestamp
+- [x] successful write count
 
-Evidence to record:
+Implementation evidence added:
 
-- Device model and Android version.
-- Health Connect availability status.
-- Permission state screenshots or notes.
-- Synthetic `clientRecordId`.
-- `clientRecordVersion` behavior.
-- Number of records before and after three write attempts.
-- Ledger rows after each attempt.
+- Android project: `settings.gradle.kts`, `build.gradle.kts`, `gradle/libs.versions.toml`, `app/build.gradle.kts`, `gradlew`.
+- Compose entry point: `app/src/main/java/dev/lui/huaweisync/MainActivity.kt`.
+- Health Connect availability and permission handling: `HealthConnectAvailabilityChecker`, `HealthConnectPermissions`.
+- Synthetic strength session mapping: `SyntheticWorkoutFactory`, `HealthWorkoutMapper`.
+- Deterministic ID: `huawei-sync:synthetic:gate1-strength-training`.
+- Client record version strategy: baseline semantic payload uses `clientRecordVersion = 1`; increment only when the same deterministic record's semantic payload changes.
+- Room ledger: `AppDatabase`, `SyncLedgerEntity`, `SyncLedgerDao` with unique primary `clientRecordId`.
+- Idempotency test: `Gate1SyncCoordinatorTest` runs sync three times and asserts one ledger row for the deterministic client record id.
+
+Verification evidence:
+
+- `git diff --check` passed locally.
+- `./scripts/tooling-doctor.sh` passed for its current checks: node, python3, uv, graphify, gsd.
+- `./scripts/verify.sh` is blocked in this environment before Gradle runs: `Unable to locate a Java Runtime`.
+
+Runtime evidence still required before Gate 1 can be marked `PASS`:
+
+- Run `./scripts/verify.sh` in an environment with Java Runtime and Android SDK.
+- Install/run the debug app on an Android device with Health Connect.
+- Record device model and Android version.
+- Record Health Connect availability status shown by the app.
+- Grant ExerciseSessionRecord read/write permissions and record permission state screenshots or notes.
+- Run the synthetic sync three times.
+- Record the synthetic `clientRecordId` and `clientRecordVersion` shown by the app.
+- Record number of matching Health Connect exercise-session records before and after three write attempts.
 
 ## Gate 2: GymRats manual import validation
 
