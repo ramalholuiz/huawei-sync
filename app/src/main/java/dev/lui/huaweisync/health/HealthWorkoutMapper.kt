@@ -1,7 +1,7 @@
 package dev.lui.huaweisync.health
 
-import androidx.health.connect.client.metadata.Metadata
 import androidx.health.connect.client.records.ExerciseSessionRecord
+import androidx.health.connect.client.records.metadata.Metadata
 import dev.lui.huaweisync.domain.DomainActivityKind
 import dev.lui.huaweisync.domain.DomainWorkout
 import dev.lui.huaweisync.domain.SyntheticWorkoutFactory
@@ -23,7 +23,7 @@ object HealthWorkoutMapper {
             exerciseType = ExerciseSessionRecord.EXERCISE_TYPE_STRENGTH_TRAINING,
             title = workout.title,
             notes = "Synthetic Gate 1 record written by huawei-sync.",
-            metadata = Metadata(
+            metadata = Metadata.manualEntry(
                 clientRecordId = SyntheticWorkoutFactory.clientRecordIdFor(workout),
                 clientRecordVersion = workout.version,
             ),

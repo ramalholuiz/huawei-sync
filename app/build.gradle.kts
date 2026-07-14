@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "dev.lui.huaweisync"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "dev.lui.huaweisync"
@@ -23,6 +23,15 @@ android {
 
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.15"
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
     }
 
     testOptions {

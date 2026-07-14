@@ -1,6 +1,7 @@
 package dev.lui.huaweisync.health
 
 import androidx.health.connect.client.records.ExerciseSessionRecord
+import androidx.health.connect.client.records.metadata.Metadata
 import dev.lui.huaweisync.domain.SyntheticWorkoutFactory
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -21,5 +22,6 @@ class HealthWorkoutMapperTest {
         assertEquals("Gate 1 synthetic strength training", record.title)
         assertEquals("huawei-sync:synthetic:gate1-strength-training", record.metadata.clientRecordId)
         assertEquals(1L, record.metadata.clientRecordVersion)
+        assertEquals(Metadata.RECORDING_METHOD_MANUAL_ENTRY, record.metadata.recordingMethod)
     }
 }
