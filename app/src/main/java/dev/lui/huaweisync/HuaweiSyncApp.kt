@@ -3,9 +3,12 @@ package dev.lui.huaweisync
 import android.app.Application
 import androidx.room.Room
 import dev.lui.huaweisync.data.AppDatabase
+import dev.lui.huaweisync.data.AppDatabaseMigrations
 
 class HuaweiSyncApp : Application() {
     val database: AppDatabase by lazy {
-        Room.databaseBuilder(this, AppDatabase::class.java, "huawei-sync.db").build()
+        Room.databaseBuilder(this, AppDatabase::class.java, "huawei-sync.db")
+            .addMigrations(AppDatabaseMigrations.MIGRATION_1_2)
+            .build()
     }
 }

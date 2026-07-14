@@ -49,7 +49,7 @@ class Gate1SyncCoordinatorTest {
         val clientRecordId = SyntheticWorkoutFactory.CLIENT_RECORD_ID
         val ledger = database.syncLedgerDao().findByClientRecordId(clientRecordId)
         assertEquals(1, database.syncLedgerDao().countByClientRecordId(clientRecordId))
-        assertEquals(3, ledger?.successfulWriteCount)
+        assertEquals(3, ledger?.attemptCount)
         assertEquals(3, writer.records.size)
         assertEquals(setOf(clientRecordId), writer.records.map { it.metadata.clientRecordId }.toSet())
     }

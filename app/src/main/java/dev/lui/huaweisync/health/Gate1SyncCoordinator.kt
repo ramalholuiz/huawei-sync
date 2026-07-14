@@ -2,7 +2,9 @@ package dev.lui.huaweisync.health
 
 import dev.lui.huaweisync.data.SyncLedgerDao
 import dev.lui.huaweisync.data.SyncLedgerEntity
+import dev.lui.huaweisync.data.SyncStatus
 import dev.lui.huaweisync.domain.SyntheticWorkoutFactory
+import dev.lui.huaweisync.domain.WorkoutMetadataPolicy
 import java.time.Clock
 
 class Gate1SyncCoordinator(
@@ -17,16 +19,26 @@ class Gate1SyncCoordinator(
         val previous = ledgerDao.findByClientRecordId(clientRecordId)
         val healthConnectRecordId = writer.write(record)
 
+        val acceptedAt = clock.millis()
         ledgerDao.upsert(
             SyncLedgerEntity(
                 clientRecordId = clientRecordId,
-                source = workout.source.name,
-                sourceWorkoutId = workout.sourceWorkoutId,
-                dedupeKey = workout.dedupeKey,
+                sourceProvider = workout.source.stableName,
+                sourceRecordId = workout.sourceWorkoutId,
+                sourceVersion = null,
+                contentHash = WorkoutMetadataPolicy.contentHashFor(workout),
                 clientRecordVersion = workout.version,
                 healthConnectRecordId = healthConnectRecordId ?: previous?.healthConnectRecordId,
-                lastSyncedAtEpochMillis = clock.millis(),
-                successfulWriteCount = (previous?.successfulWriteCount ?: 0) + 1,
+                status = SyncStatus.SYNCED,
+                attemptCount = (previous?.attemptCount ?: 0) + 1,
+                acceptedAtEpochMillis = acceptedAt,
+                confirmedAtEpochMillis = previous?.confirmedAtEpochMillis,
+                createdAtEpochMillis = previous?.createdAtEpochMillis ?: acceptedAt,
+                updatedAtEpochMillis = acceptedAt,
+                lastErrorCode = null,
+                lastErrorPhase = null,
+                lastErrorAtEpochMillis = null,
+                lastErrorMessage = null,
             ),
         )
 
@@ -36,7 +48,7 @@ class Gate1SyncCoordinator(
             clientRecordId = clientRecordId,
             clientRecordVersion = workout.version,
             ledgerRowsForClientRecordId = ledgerRows,
-            writeCountForClientRecordId = updated?.successfulWriteCount ?: 0,
+            writeCountForClientRecordId = updated?.attemptCount ?: 0,
         )
     }
 }
