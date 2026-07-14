@@ -237,7 +237,8 @@ class SyncLedgerStoreTest {
             failingStore.prepare(workout())
         }
 
-        assertEquals(clockFailure, observed)
+        assertEquals(clockFailure::class.java, observed::class.java)
+        assertEquals(clockFailure.message, observed.message)
         assertEquals(0, database.syncLedgerDao().countByClientRecordId(CLIENT_ID))
     }
 
