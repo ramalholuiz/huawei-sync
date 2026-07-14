@@ -72,6 +72,26 @@ Exit criteria:
 - The ledger records each attempt/status without being the source of deduplication truth.
 - Tests, lint, and build run through `scripts/verify.sh` once the Android project exists.
 
+### Frozen Gate 1 proof and slice ownership
+
+The verified build/install/launch baseline is not runtime proof. Gate 1 remains `BLOCKED` on exactly these five items:
+
+1. Actual Health Connect permission grant for the exercise-session read/write permissions.
+2. A real synthetic `ExerciseSessionRecord` write.
+3. Real Health Connect readback of that synthetic record.
+4. Three-run idempotency against both Health Connect and the Room ledger.
+5. Reinstall behavior proving deterministic deduplication survives app reinstall.
+
+This is the exhaustive remaining Gate 1 proof. Manual GymRats validation belongs to Gate 2.
+
+Downstream implementation ownership is also fixed:
+
+- S02 implements deterministic identity, the canonical content hash, stable semantic versioning, and the complete Room ledger schema and transitions.
+- S03 implements and tests the coordinator write, finalize, confirm, and reconcile contracts.
+- S04 implements diagnostics and the runtime validation procedure.
+
+Huawei and Strava integrations, direct GymRats APIs, WorkManager, `StepsRecord`, and P1 metrics are out of scope for Gate 1. `scripts/verify.sh` remains unchanged as the canonical build-verification entry point.
+
 ## Gate 2: GymRats manual import validation
 
 Purpose: prove GymRats consumes the synthetic Health Connect workout written by this app.

@@ -26,17 +26,25 @@ The project is gate-driven. Do not build the full product until Gate 1 Health Co
 - `docs/data-mapping.md` — Huawei/Strava → domain → Health Connect mapping.
 - `scripts/verify.sh` — verification entry point.
 
+## Verified baseline
+
+Commit `15e3fbd` and the supplied Windows evidence establish this `VERIFIED` build/install baseline:
+
+- checksum-verified Gradle Wrapper 8.11.1 with AGP 8.10.1;
+- `compileSdk 36`, `targetSdk 35`, and AndroidX Health Connect 1.1.0;
+- a usable Java environment;
+- passing `./gradlew clean test lint assembleDebug`, canonical `scripts/verify.sh`, and debug/release unit tests;
+- a generated debug APK installed successfully on `emulator-5554`;
+- `MainActivity` launched without an immediate crash and reported Health Connect `Available`.
+
+Gate 1 remains `BLOCKED`: the build/install/launch baseline does not prove an actual permission grant, synthetic Health Connect write/readback, three-run idempotency, or reinstall behavior.
+
 ## Verification
 
-After the Android project exists, run:
+`scripts/verify.sh` is the canonical build-verification entry point:
 
 ```bash
 scripts/verify.sh
 ```
 
-The final definition of done requires both commands to pass:
-
-```bash
-./gradlew clean test lint assembleDebug
-scripts/verify.sh
-```
+It runs the required clean Gradle verification (`clean test lint assembleDebug`). The final definition of done still requires the canonical script and its underlying Gradle checks to pass in the target verification environment.

@@ -5,30 +5,39 @@ import org.junit.Test
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
+import java.time.ZoneOffset
 
 class SyntheticWorkoutFactoryTest {
-    private val clock = Clock.fixed(Instant.parse("2026-07-14T12:00:00Z"), ZoneId.of("UTC"))
-
     @Test
-    fun syntheticWorkoutUsesDeterministicClientRecordIdAcrossRuns() {
-        val first = SyntheticWorkoutFactory.create(clock)
-        val second = SyntheticWorkoutFactory.create(clock)
+    fun syntheticWorkoutIdentityAndContentAreStableAcrossClocksAndTimeZones() {
+        val first = SyntheticWorkoutFactory.create(
+            Clock.fixed(Instant.parse("2026-07-14T12:00:00Z"), ZoneId.of("UTC")),
+        )
+        val second = SyntheticWorkoutFactory.create(
+            Clock.fixed(Instant.parse("2030-01-01T01:02:03Z"), ZoneId.of("Pacific/Auckland")),
+        )
+        val firstMetadata = WorkoutMetadataPolicy.resolve(first)
+        val secondMetadata = WorkoutMetadataPolicy.resolve(second)
 
-        assertEquals(
-            "huawei-sync:synthetic:gate1-strength-training",
-            SyntheticWorkoutFactory.clientRecordIdFor(first),
-        )
-        assertEquals(
-            SyntheticWorkoutFactory.clientRecordIdFor(first),
-            SyntheticWorkoutFactory.clientRecordIdFor(second),
-        )
+        assertEquals(first, second)
+        assertEquals(firstMetadata, secondMetadata)
+        assertEquals(SyntheticWorkoutFactory.CLIENT_RECORD_ID, firstMetadata.clientRecordId)
+        assertEquals(1L, firstMetadata.clientRecordVersion)
     }
 
     @Test
-    fun syntheticWorkoutDefinesStableClientRecordVersionStrategy() {
-        val workout = SyntheticWorkoutFactory.create(clock)
+    fun syntheticWorkoutDefinesTheCompleteStableGateOneSemantics() {
+        val workout = SyntheticWorkoutFactory.create()
 
-        assertEquals(1L, workout.version)
-        assertEquals(SyntheticWorkoutFactory.CLIENT_RECORD_VERSION, workout.version)
+        assertEquals(WorkoutSource.SYNTHETIC, workout.source)
+        assertEquals("gate1-strength-training", workout.sourceWorkoutId)
+        assertEquals("Gate 1 synthetic strength training", workout.title)
+        assertEquals(DomainActivityKind.STRENGTH_TRAINING, workout.activityKind)
+        assertEquals(Instant.parse("2026-07-14T11:15:00Z"), workout.startTime)
+        assertEquals(Instant.parse("2026-07-14T12:00:00Z"), workout.endTime)
+        assertEquals(ZoneOffset.UTC, workout.startZoneOffset)
+        assertEquals(ZoneOffset.UTC, workout.endZoneOffset)
+        assertEquals("Synthetic Gate 1 record written by huawei-sync.", workout.notes)
+        assertEquals("huawei-sync synthetic gate", workout.deviceName)
     }
 }

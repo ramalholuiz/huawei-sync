@@ -42,22 +42,32 @@ Implementation evidence added:
 - Room ledger: `AppDatabase`, `SyncLedgerEntity`, `SyncLedgerDao` with unique primary `clientRecordId`.
 - Idempotency test: `Gate1SyncCoordinatorTest` runs sync three times and asserts one ledger row for the deterministic client record id.
 
-Verification evidence:
+Build, install, and launch evidence (`VERIFIED`):
 
-- `git diff --check` passed locally.
-- `./scripts/tooling-doctor.sh` passed for its current checks: node, python3, uv, graphify, gsd.
-- `./scripts/verify.sh` is blocked in this environment before Gradle runs: `Unable to locate a Java Runtime`.
+- Commit `15e3fbd` provides the checksum-verified Gradle Wrapper 8.11.1, AGP 8.10.1, `compileSdk 36`, `targetSdk 35`, and Health Connect 1.1.0 baseline.
+- Windows verification had usable Java and passed `clean test lint assembleDebug` through the canonical `scripts/verify.sh` entry point.
+- Debug and release unit tests passed, and the debug APK was generated.
+- `adb` installed the debug APK successfully on `emulator-5554`.
+- `MainActivity` launched without an immediate crash.
+- The app reported Health Connect `Available`.
 
-Runtime evidence still required before Gate 1 can be marked `PASS`:
+This settles the build/install/launch baseline; it does not settle the Health Connect runtime contract. Gate 1 therefore remains `BLOCKED` on exactly these five runtime proofs:
 
-- Run `./scripts/verify.sh` in an environment with Java Runtime and Android SDK.
-- Install/run the debug app on an Android device with Health Connect.
-- Record device model and Android version.
-- Record Health Connect availability status shown by the app.
-- Grant ExerciseSessionRecord read/write permissions and record permission state screenshots or notes.
-- Run the synthetic sync three times.
-- Record the synthetic `clientRecordId` and `clientRecordVersion` shown by the app.
-- Record number of matching Health Connect exercise-session records before and after three write attempts.
+- actual Health Connect permission grant for the exercise-session read/write permissions;
+- a real synthetic `ExerciseSessionRecord` write;
+- real Health Connect readback of the synthetic record;
+- three-run idempotency evidence against both Health Connect and the Room ledger;
+- reinstall behavior confirming that deterministic deduplication survives app reinstall.
+
+This list is exhaustive for Gate 1. Manual GymRats validation belongs to Gate 2 and is not a Gate 1 blocker.
+
+Remaining milestone ownership is frozen as follows:
+
+- S02 implements deterministic identity, the canonical content hash, stable semantic versioning, and the complete Room ledger schema and transitions.
+- S03 implements and tests the coordinator write, finalize, confirm, and reconcile contracts.
+- S04 implements diagnostics and the runtime validation procedure that collects the five Gate 1 proofs above.
+
+Huawei and Strava integrations, direct GymRats APIs, WorkManager, `StepsRecord`, and P1 metrics remain out of scope for Gate 1. `scripts/verify.sh` remains unchanged as the canonical build-verification entry point.
 
 ## Gate 2: GymRats manual import validation
 

@@ -1,5 +1,19 @@
 # Local development tooling
 
+## Android build baseline
+
+Commit `15e3fbd` and the supplied Windows run establish the following `VERIFIED` toolchain:
+
+- checksum-verified Gradle Wrapper 8.11.1;
+- Android Gradle Plugin 8.10.1;
+- `compileSdk 36` and `targetSdk 35`;
+- AndroidX Health Connect 1.1.0;
+- a usable Windows Java environment.
+
+The Windows run passed `clean test lint assembleDebug` through canonical `scripts/verify.sh`, passed debug/release unit tests, and generated the debug APK. The APK installed successfully on `emulator-5554`; `MainActivity` launched without an immediate crash and Health Connect reported `Available`.
+
+This toolchain and install baseline is `VERIFIED`, while Gate 1 remains `BLOCKED` on real Health Connect permission, write/readback, three-run idempotency, and reinstall evidence. `scripts/verify.sh` remains the sole canonical build-verification entry point; do not add duplicate baseline checkers or platform-specific verification scripts.
+
 ## Ponytail
 
 Ponytail is already installed in Codex, and its hooks have been reviewed and approved. Use it to review changes for simplicity. It must not remove security requirements, Room persistence, idempotency, or tests.
