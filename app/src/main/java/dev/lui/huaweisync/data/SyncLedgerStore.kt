@@ -194,7 +194,7 @@ class SyncLedgerStore(
         ).withoutError()
     }
 
-    suspend fun recordBlocked(clientRecordId: String, block: SyncBlock): SyncLedgerEntry =
+    override suspend fun recordBlocked(clientRecordId: String, block: SyncBlock): SyncLedgerEntry =
         mutate(clientRecordId) { row ->
             check(
                 row.status in setOf(
@@ -219,7 +219,7 @@ class SyncLedgerStore(
             )
         }
 
-    suspend fun recordFailure(clientRecordId: String, failure: SyncFailure): SyncLedgerEntry =
+    override suspend fun recordFailure(clientRecordId: String, failure: SyncFailure): SyncLedgerEntry =
         mutate(clientRecordId) { row ->
             check(
                 row.status in setOf(
