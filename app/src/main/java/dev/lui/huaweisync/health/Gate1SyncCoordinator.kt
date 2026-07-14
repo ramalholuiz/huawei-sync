@@ -1,54 +1,58 @@
 package dev.lui.huaweisync.health
 
-import dev.lui.huaweisync.data.SyncLedgerDao
-import dev.lui.huaweisync.data.SyncLedgerEntity
+import dev.lui.huaweisync.data.PreparedLedgerWorkout
+import dev.lui.huaweisync.data.SyncLedgerEntry
+import dev.lui.huaweisync.data.SyncLedgerStore
 import dev.lui.huaweisync.data.SyncStatus
+import dev.lui.huaweisync.domain.PreviousWorkoutMetadata
 import dev.lui.huaweisync.domain.SyntheticWorkoutFactory
 import dev.lui.huaweisync.domain.WorkoutMetadataPolicy
 import java.time.Clock
 
 class Gate1SyncCoordinator(
-    private val ledgerDao: SyncLedgerDao,
+    private val ledgerStore: SyncLedgerStore,
     private val writer: HealthWorkoutWriter,
     private val clock: Clock = Clock.systemDefaultZone(),
 ) {
     suspend fun runSyntheticStrengthSync(): Gate1SyncResult {
         val workout = SyntheticWorkoutFactory.create(clock)
-        val clientRecordId = SyntheticWorkoutFactory.clientRecordIdFor(workout)
-        val record = HealthWorkoutMapper.toExerciseSessionRecord(workout)
-        val previous = ledgerDao.findByClientRecordId(clientRecordId)
-        val healthConnectRecordId = writer.write(record)
-
-        val acceptedAt = clock.millis()
-        ledgerDao.upsert(
-            SyncLedgerEntity(
-                clientRecordId = clientRecordId,
+        val existing = ledgerStore.findBySource(
+            workout.source.stableName,
+            workout.sourceWorkoutId,
+        )
+        val previousMetadata = existing?.contentHash?.let { contentHash ->
+            PreviousWorkoutMetadata(
+                contentHash = contentHash,
+                clientRecordVersion = existing.clientRecordVersion,
+            )
+        }
+        val metadata = WorkoutMetadataPolicy.resolve(workout, previousMetadata)
+        val prepared = ledgerStore.prepare(
+            PreparedLedgerWorkout(
                 sourceProvider = workout.source.stableName,
                 sourceRecordId = workout.sourceWorkoutId,
                 sourceVersion = null,
-                contentHash = WorkoutMetadataPolicy.contentHashFor(workout),
-                clientRecordVersion = workout.version,
-                healthConnectRecordId = healthConnectRecordId ?: previous?.healthConnectRecordId,
-                status = SyncStatus.SYNCED,
-                attemptCount = (previous?.attemptCount ?: 0) + 1,
-                acceptedAtEpochMillis = acceptedAt,
-                confirmedAtEpochMillis = previous?.confirmedAtEpochMillis,
-                createdAtEpochMillis = previous?.createdAtEpochMillis ?: acceptedAt,
-                updatedAtEpochMillis = acceptedAt,
-                lastErrorCode = null,
-                lastErrorPhase = null,
-                lastErrorAtEpochMillis = null,
-                lastErrorMessage = null,
+                metadata = metadata,
             ),
         )
 
-        val ledgerRows = ledgerDao.countByClientRecordId(clientRecordId)
-        val updated = ledgerDao.findByClientRecordId(clientRecordId)
-        return Gate1SyncResult(
-            clientRecordId = clientRecordId,
-            clientRecordVersion = workout.version,
-            ledgerRowsForClientRecordId = ledgerRows,
-            writeCountForClientRecordId = updated?.attemptCount ?: 0,
-        )
+        if (
+            prepared.acceptedAtEpochMillis != null &&
+            prepared.status != SyncStatus.RECONCILIATION_PENDING
+        ) {
+            return prepared.toResult()
+        }
+
+        ledgerStore.beginWrite(metadata.clientRecordId)
+        val record = HealthWorkoutMapper.toExerciseSessionRecord(workout, metadata)
+        val healthConnectRecordId = writer.write(record)
+        return ledgerStore.recordAccepted(metadata.clientRecordId, healthConnectRecordId).toResult()
     }
+
+    private fun SyncLedgerEntry.toResult() = Gate1SyncResult(
+        clientRecordId = clientRecordId,
+        clientRecordVersion = clientRecordVersion,
+        ledgerRowsForClientRecordId = 1,
+        writeCountForClientRecordId = attemptCount,
+    )
 }

@@ -82,7 +82,7 @@ class MainActivity : ComponentActivity() {
                                             "Cannot sync yet. Missing permissions: ${missing.size}."
                                         } else {
                                             val result = Gate1SyncCoordinator(
-                                                ledgerDao = app.database.syncLedgerDao(),
+                                                ledgerStore = app.ledgerStore,
                                                 writer = HealthConnectWorkoutWriter(client),
                                             ).runSyntheticStrengthSync()
                                             "Synced ${result.clientRecordId} v${result.clientRecordVersion}. Ledger rows: ${result.ledgerRowsForClientRecordId}; writes: ${result.writeCountForClientRecordId}."

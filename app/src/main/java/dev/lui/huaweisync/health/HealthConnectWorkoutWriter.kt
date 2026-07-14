@@ -3,7 +3,7 @@ package dev.lui.huaweisync.health
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.records.ExerciseSessionRecord
 
-interface HealthWorkoutWriter {
+fun interface HealthWorkoutWriter {
     suspend fun write(record: ExerciseSessionRecord): String?
 }
 
