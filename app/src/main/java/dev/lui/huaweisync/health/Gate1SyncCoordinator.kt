@@ -113,6 +113,8 @@ class Gate1SyncCoordinator(
             clientRecordId = uncertain.clientRecordId,
             clientRecordVersion = uncertain.clientRecordVersion,
             externalRecordId = uncertain.healthConnectRecordId,
+            startTime = workout.startTime,
+            endTime = workout.endTime,
         )
         return when (val result = reconciler.reconcile(request)) {
             is HealthReconciliationResult.Found -> finalizeReconciliation(
@@ -157,6 +159,8 @@ class Gate1SyncCoordinator(
             clientRecordId = verifying.clientRecordId,
             clientRecordVersion = verifying.clientRecordVersion,
             externalRecordId = verifying.healthConnectRecordId,
+            startTime = workout.startTime,
+            endTime = workout.endTime,
         )
         return when (val result = confirmer.confirm(request)) {
             HealthConfirmationResult.Confirmed -> finalizeConfirmation(verifying)

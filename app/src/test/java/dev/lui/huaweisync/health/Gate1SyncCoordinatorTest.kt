@@ -415,6 +415,8 @@ class Gate1SyncCoordinatorTest {
                 assertEquals(SyntheticWorkoutFactory.CLIENT_RECORD_ID, request.clientRecordId)
                 assertEquals(1L, request.clientRecordVersion)
                 assertEquals("health-connect-id-1", request.externalRecordId)
+                assertEquals(Instant.parse("2026-07-14T11:15:00Z"), request.startTime)
+                assertEquals(Instant.parse("2026-07-14T12:00:00Z"), request.endTime)
                 HealthConfirmationResult.Confirmed
             },
         )
@@ -599,6 +601,8 @@ class Gate1SyncCoordinatorTest {
                 assertEquals(SyntheticWorkoutFactory.CLIENT_RECORD_ID, request.clientRecordId)
                 assertEquals(1L, request.clientRecordVersion)
                 assertEquals("health-connect-id-1", request.externalRecordId)
+                assertEquals(Instant.parse("2026-07-14T11:15:00Z"), request.startTime)
+                assertEquals(Instant.parse("2026-07-14T12:00:00Z"), request.endTime)
                 HealthReconciliationResult.Found("health-connect-id-reconciled")
             },
         )
@@ -760,6 +764,18 @@ class Gate1SyncCoordinatorTest {
         assertEquals(1, durable.attemptCount)
         assertNull(durable.acceptedAtEpochMillis)
         assertEquals(1, writer.records.size)
+    }
+
+    @Test
+    fun malformedConfirmationCodeIsRejectedAtContractBoundary() {
+        val observed = try {
+            HealthConfirmationResult.Inconclusive("raw response text")
+            throw AssertionError("Expected malformed confirmation code rejection")
+        } catch (error: IllegalArgumentException) {
+            error
+        }
+
+        assertTrue(observed.message!!.contains("stable uppercase identifiers"))
     }
 
     @Test

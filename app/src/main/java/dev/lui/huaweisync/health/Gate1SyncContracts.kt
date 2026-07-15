@@ -6,6 +6,7 @@ import dev.lui.huaweisync.data.SyncErrorPhase
 import dev.lui.huaweisync.data.SyncFailure
 import dev.lui.huaweisync.data.SyncFailureDisposition
 import dev.lui.huaweisync.data.SyncLedgerEntry
+import java.time.Instant
 
 /** Coordinator-facing persistence boundary; implementations must keep each transition atomic. */
 interface Gate1SyncLedger {
@@ -67,7 +68,18 @@ data class HealthConfirmationRequest(
     val clientRecordId: String,
     val clientRecordVersion: Long,
     val externalRecordId: String?,
-)
+    val startTime: Instant,
+    val endTime: Instant,
+) {
+    init {
+        requireValidInspectionIdentityAndBounds(
+            clientRecordId,
+            clientRecordVersion,
+            startTime,
+            endTime,
+        )
+    }
+}
 
 fun interface HealthWorkoutConfirmer {
     suspend fun confirm(request: HealthConfirmationRequest): HealthConfirmationResult
@@ -77,7 +89,18 @@ data class HealthReconciliationRequest(
     val clientRecordId: String,
     val clientRecordVersion: Long,
     val externalRecordId: String?,
-)
+    val startTime: Instant,
+    val endTime: Instant,
+) {
+    init {
+        requireValidInspectionIdentityAndBounds(
+            clientRecordId,
+            clientRecordVersion,
+            startTime,
+            endTime,
+        )
+    }
+}
 
 fun interface HealthWorkoutReconciler {
     suspend fun reconcile(request: HealthReconciliationRequest): HealthReconciliationResult
@@ -92,13 +115,13 @@ sealed interface HealthReconciliationResult {
 
     data class AuthoritativelyAbsent(val code: String) : HealthReconciliationResult {
         init {
-            requireStableReconciliationCode(code)
+            requireStableInspectionCode(code)
         }
     }
 
     data class Inconclusive(val code: String) : HealthReconciliationResult {
         init {
-            requireStableReconciliationCode(code)
+            requireStableInspectionCode(code)
         }
     }
 
@@ -117,9 +140,17 @@ sealed interface HealthReconciliationResult {
 sealed interface HealthConfirmationResult {
     data object Confirmed : HealthConfirmationResult
 
-    data class Absent(val code: String) : HealthConfirmationResult
+    data class Absent(val code: String) : HealthConfirmationResult {
+        init {
+            requireStableInspectionCode(code)
+        }
+    }
 
-    data class Inconclusive(val code: String) : HealthConfirmationResult
+    data class Inconclusive(val code: String) : HealthConfirmationResult {
+        init {
+            requireStableInspectionCode(code)
+        }
+    }
 
     data class Failed(val failure: SyncFailure) : HealthConfirmationResult {
         init {
@@ -133,10 +164,21 @@ sealed interface HealthConfirmationResult {
     }
 }
 
-private fun requireStableReconciliationCode(code: String) {
+private fun requireStableInspectionCode(code: String) {
     require(code.matches(Regex("[A-Z][A-Z0-9_]{0,63}"))) {
-        "Reconciliation codes must be stable uppercase identifiers of at most 64 characters."
+        "Inspection codes must be stable uppercase identifiers of at most 64 characters."
     }
+}
+
+internal fun requireValidInspectionIdentityAndBounds(
+    clientRecordId: String,
+    clientRecordVersion: Long,
+    startTime: Instant,
+    endTime: Instant,
+) {
+    require(clientRecordId.isNotBlank()) { "clientRecordId must not be blank." }
+    require(clientRecordVersion >= 1L) { "clientRecordVersion must be at least 1." }
+    require(startTime < endTime) { "Inspection startTime must be before endTime." }
 }
 
 enum class SyncPhase {
