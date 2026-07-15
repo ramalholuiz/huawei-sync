@@ -114,9 +114,11 @@ class Gate1RuntimeDiagnosticsTest {
     @Test
     fun `action and Room failures are sanitized and never include exception text`() = runTest {
         val privateText = "private provider response for Jane Doe"
+        val reportedFailures = mutableListOf<String>()
         val actionFailure = runtime(
             runSync = { throw IOException(privateText) },
             findLedger = { null },
+            reportActionFailure = reportedFailures::add,
         ).run()
         val roomFailure = runtime(
             findLedger = { throw IOException(privateText) },
@@ -124,6 +126,9 @@ class Gate1RuntimeDiagnosticsTest {
 
         assertEquals("GATE1_RUNTIME_ACTION_FAILED", actionFailure.code)
         assertEquals("ROOM_LEDGER_READ_FAILED", roomFailure.code)
+        assertEquals(1, reportedFailures.size)
+        assertTrue(reportedFailures.single().contains(IOException::class.java.name))
+        assertFalse(reportedFailures.single().contains(privateText))
         assertFalse(actionFailure.toString().contains(privateText))
         assertFalse(roomFailure.toString().contains(privateText))
     }
@@ -203,12 +208,14 @@ class Gate1RuntimeDiagnosticsTest {
                 HealthWorkoutInspection(1, 1, "external-private-id"),
             )
         },
+        reportActionFailure: (String) -> Unit = {},
     ) = Gate1RuntimeDiagnostics(
         runSync = runSync,
         confirmSync = confirmSync,
         reconcileSync = reconcileSync,
         findLedger = findLedger,
         inspect = inspect,
+        reportActionFailure = reportActionFailure,
     )
 
     private fun completed() = Gate1SyncResult.Completed(

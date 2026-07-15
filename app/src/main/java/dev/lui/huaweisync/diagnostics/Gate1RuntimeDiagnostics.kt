@@ -1,5 +1,6 @@
 package dev.lui.huaweisync.diagnostics
 
+import android.util.Log
 import dev.lui.huaweisync.data.DiagnosticEvidence
 import dev.lui.huaweisync.data.DiagnosticNextAction
 import dev.lui.huaweisync.data.SyncLedgerEntry
@@ -11,6 +12,21 @@ import dev.lui.huaweisync.health.HealthWorkoutInspectionRequest
 import dev.lui.huaweisync.health.HealthWorkoutInspectionResult
 import dev.lui.huaweisync.health.HealthWorkoutInspector
 import kotlinx.coroutines.CancellationException
+
+internal fun sanitizedFailureSummary(failure: Throwable): String = buildString {
+    append(failure.javaClass.name)
+    failure.stackTrace.take(12).forEach { frame ->
+        append("\n  at ")
+        append(frame.className)
+        append('.')
+        append(frame.methodName)
+        append('(')
+        append(frame.fileName ?: "unknown")
+        append(':')
+        append(frame.lineNumber)
+        append(')')
+    }
+}
 
 /**
  * Runtime boundary for Gate 1 UI actions.
@@ -25,6 +41,7 @@ class Gate1RuntimeDiagnostics internal constructor(
     private val reconcileSync: suspend () -> Gate1SyncResult,
     private val findLedger: suspend () -> SyncLedgerEntry?,
     private val inspect: suspend (HealthWorkoutInspectionRequest) -> HealthWorkoutInspectionResult,
+    private val reportActionFailure: (String) -> Unit = {},
 ) {
     constructor(
         coordinator: Gate1SyncCoordinator,
@@ -39,6 +56,7 @@ class Gate1RuntimeDiagnostics internal constructor(
             ledger.findBySource(workout.source.stableName, workout.sourceWorkoutId)
         },
         inspect = inspector::inspect,
+        reportActionFailure = { summary -> Log.e(LOG_TAG, summary) },
     )
 
     suspend fun run(): Gate1Diagnostic = execute(runSync)
@@ -55,7 +73,8 @@ class Gate1RuntimeDiagnostics internal constructor(
         Gate1Diagnostics.fromResult(result, inspection.facts).withCodeIfAbsent(inspection.code)
     } catch (failure: CancellationException) {
         throw failure
-    } catch (_: Exception) {
+    } catch (failure: Exception) {
+        reportActionFailure(sanitizedFailureSummary(failure))
         refreshWithCode(ACTION_FAILED)
     }
 
@@ -132,6 +151,7 @@ class Gate1RuntimeDiagnostics internal constructor(
     )
 
     private companion object {
+        const val LOG_TAG = "Gate1Runtime"
         const val ACTION_FAILED = "GATE1_RUNTIME_ACTION_FAILED"
         const val ROOM_READ_FAILED = "ROOM_LEDGER_READ_FAILED"
         const val INSPECTION_FAILED = "HEALTH_CONNECT_INSPECTION_FAILED"
