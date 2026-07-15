@@ -51,7 +51,11 @@ class Gate1SyncCoordinator(
             prepared.acceptedAtEpochMillis != null &&
             prepared.status != SyncStatus.RECONCILIATION_PENDING
         ) {
-            return prepared.toResult()
+            return if (prepared.status == SyncStatus.VERIFIED) {
+                prepared.toVerifiedNoOpResult()
+            } else {
+                prepared.toResult()
+            }
         }
 
         // Stranded or uncertain writes must be reconciled explicitly; preflight must not relabel
@@ -336,5 +340,16 @@ class Gate1SyncCoordinator(
         clientRecordVersion = clientRecordVersion,
         ledgerRowsForClientRecordId = 1,
         writeCountForClientRecordId = attemptCount,
+    )
+
+    private fun SyncLedgerEntry.toVerifiedNoOpResult() = Gate1SyncResult.Confirmed(
+        clientRecordId = clientRecordId,
+        clientRecordVersion = clientRecordVersion,
+        ledgerRowsForClientRecordId = 1,
+        writeCountForClientRecordId = attemptCount,
+        externalRecordId = healthConnectRecordId,
+        phase = SyncPhase.CONFIRMATION,
+        code = "ALREADY_VERIFIED",
+        localFinalizationStatus = LocalFinalizationStatus.FINALIZED,
     )
 }
