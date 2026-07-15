@@ -18,6 +18,28 @@ enum class SyncStatus {
     RECONCILIATION_PENDING,
 }
 
+/** Closed user actions exposed by diagnostics; no free-form recovery instructions are exported. */
+enum class DiagnosticNextAction {
+    NONE,
+    RUN_SYNC,
+    RETRY_SYNC,
+    CONFIRM,
+    RECONCILE,
+    REQUEST_PERMISSION,
+    CHECK_HEALTH_CONNECT,
+}
+
+/** Low-cardinality classification of the evidence currently available for Gate 1. */
+enum class DiagnosticEvidence {
+    READY,
+    ACCEPTED,
+    NEEDS_CONFIRMATION,
+    NEEDS_RECONCILIATION,
+    VERIFIED,
+    BLOCKED,
+    FAILED,
+}
+
 /** Privacy-safe stage at which a sync failure occurred. */
 enum class SyncErrorPhase {
     PREPARATION,
