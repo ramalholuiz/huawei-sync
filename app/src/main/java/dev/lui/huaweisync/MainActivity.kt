@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.HealthConnectClient
 import dev.lui.huaweisync.data.DiagnosticNextAction
+import dev.lui.huaweisync.data.SyncStatus
 import dev.lui.huaweisync.diagnostics.Gate1Diagnostic
 import dev.lui.huaweisync.diagnostics.Gate1Diagnostics
 import dev.lui.huaweisync.diagnostics.Gate1ExportInput
@@ -250,7 +251,7 @@ private fun Gate1DiagnosticsScreen(
         }
         Button(
             enabled = !busy && availability == HealthConnectAvailability.Available &&
-                nextAction in setOf(DiagnosticNextAction.RUN_SYNC, DiagnosticNextAction.RETRY_SYNC),
+                canRunGate1Sync(diagnostic?.nextAction, diagnostic?.durableStatus),
             onClick = onRun,
         ) {
             Text("Run synthetic strength sync")
@@ -279,6 +280,18 @@ private fun Gate1DiagnosticsScreen(
             Text("Share sanitized diagnostics")
         }
     }
+}
+
+/** Allows the explicit third idempotency run only after authoritative verification. */
+internal fun canRunGate1Sync(
+    nextAction: DiagnosticNextAction?,
+    durableStatus: SyncStatus?,
+): Boolean = when (nextAction) {
+    DiagnosticNextAction.RUN_SYNC,
+    DiagnosticNextAction.RETRY_SYNC,
+    -> true
+    DiagnosticNextAction.NONE -> durableStatus == SyncStatus.VERIFIED
+    else -> false
 }
 
 private fun HealthConnectAvailability.toDiagnosticAvailability(): DiagnosticAvailability = when (this) {

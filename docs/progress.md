@@ -28,7 +28,7 @@ Build, install, and launch evidence (`VERIFIED`):
 
 - Commit `15e3fbd` contains the checksum-verified Gradle Wrapper 8.11.1, AGP 8.10.1, `compileSdk 36`, `targetSdk 35`, and Health Connect 1.1.0 baseline.
 - The Windows environment provided usable Java.
-- `clean test lint assembleDebug` passed through canonical `scripts/verify.sh`.
+- `clean test lint assembleDebug` passed on the supplied Windows baseline; the repository now exposes equivalent POSIX and Windows verification scripts.
 - Debug and release unit tests passed, and the debug APK was generated.
 - `adb` installed the debug APK successfully on `emulator-5554`.
 - `MainActivity` launched without an immediate crash.
@@ -52,11 +52,24 @@ Slice ownership:
 - S03 implements and tests the coordinator write, finalize, confirm, and reconcile contracts.
 - S04 implements diagnostics and the runtime validation procedure that produces the remaining Gate 1 evidence.
 
-Huawei and Strava integrations, direct GymRats APIs, WorkManager, `StepsRecord`, and P1 metrics remain out of scope for Gate 1. `scripts/verify.sh` remains unchanged as the canonical build-verification entry point.
+Huawei and Strava integrations, direct GymRats APIs, WorkManager, `StepsRecord`, and P1 metrics remain out of scope for Gate 1.
+
+## 2026-07-15 — Cross-platform Gate 1 runtime contract
+
+Implemented:
+
+- Added `scripts/verify.ps1`, a Windows-native `gradlew.bat clean test lint assembleDebug` entry point with caller-location independence and failure propagation.
+- Extended `scripts/check-gate1-baseline.sh` to audit both verification entry points, the diagnostics/inspector surfaces, exact runtime invariants, and continued `BLOCKED` wording.
+- Added the authoritative [`docs/gate1-runtime-validation.md`](gate1-runtime-validation.md) permission, write, bounded readback, three-action, Room/Health Connect comparison, and reinstall procedure.
+- Kept evidence export privacy-safe: no payloads, raw identifiers, provider messages, or exception text.
+
+Runtime evidence recorded: no
+
+Gate 1 remains `BLOCKED`. No permission, real write/readback, three-action device count, or reinstall evidence was produced while writing this procedure.
 
 Next steps:
 
-1. Complete S02's deterministic identity, hash, versioning, and ledger contract.
-2. Complete S03's coordinator contracts and tests.
-3. Use S04's diagnostics and runtime validation procedure to collect the five proofs above.
+1. Run the platform verification command and exact device procedure in `docs/gate1-runtime-validation.md`.
+2. Record the six sanitized checkpoint reports and environment metadata in this file.
+3. Change Gate 1 to `PASS` only when every expected invariant has objective device evidence.
 4. Keep manual GymRats validation in Gate 2.

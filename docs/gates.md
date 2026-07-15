@@ -45,13 +45,13 @@ Implementation evidence added:
 Build, install, and launch evidence (`VERIFIED`):
 
 - Commit `15e3fbd` provides the checksum-verified Gradle Wrapper 8.11.1, AGP 8.10.1, `compileSdk 36`, `targetSdk 35`, and Health Connect 1.1.0 baseline.
-- Windows verification had usable Java and passed `clean test lint assembleDebug` through the canonical `scripts/verify.sh` entry point.
+- Windows verification had usable Java and passed `clean test lint assembleDebug`; `scripts/verify.ps1` now provides the checked-in Windows-native equivalent of `scripts/verify.sh`.
 - Debug and release unit tests passed, and the debug APK was generated.
 - `adb` installed the debug APK successfully on `emulator-5554`.
 - `MainActivity` launched without an immediate crash.
 - The app reported Health Connect `Available`.
 
-This settles the build/install/launch baseline; it does not settle the Health Connect runtime contract. Gate 1 therefore remains `BLOCKED` on exactly these five runtime proofs:
+This settles the build/install/launch baseline; it does not settle the Health Connect runtime contract. Follow the authoritative cross-platform procedure in [`docs/gate1-runtime-validation.md`](gate1-runtime-validation.md). Gate 1 therefore remains `BLOCKED` on exactly these five runtime proofs:
 
 - actual Health Connect permission grant for the exercise-session read/write permissions;
 - a real synthetic `ExerciseSessionRecord` write;
@@ -67,7 +67,7 @@ Remaining milestone ownership is frozen as follows:
 - S03 implements and tests the coordinator write, finalize, confirm, and reconcile contracts.
 - S04 implements diagnostics and the runtime validation procedure that collects the five Gate 1 proofs above.
 
-Huawei and Strava integrations, direct GymRats APIs, WorkManager, `StepsRecord`, and P1 metrics remain out of scope for Gate 1. `scripts/verify.sh` remains unchanged as the canonical build-verification entry point.
+Huawei and Strava integrations, direct GymRats APIs, WorkManager, `StepsRecord`, and P1 metrics remain out of scope for Gate 1. The POSIX and Windows verification entry points are `scripts/verify.sh` and `scripts/verify.ps1`, respectively.
 
 ## Gate 2: GymRats manual import validation
 
