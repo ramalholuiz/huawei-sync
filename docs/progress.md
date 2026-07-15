@@ -73,3 +73,21 @@ Next steps:
 2. Record the six sanitized checkpoint reports and environment metadata in this file.
 3. Change Gate 1 to `PASS` only when every expected invariant has objective device evidence.
 4. Keep manual GymRats validation in Gate 2.
+
+## 2026-07-15 — Gate 1 physical-device attempt blocked by host prerequisites
+
+Checkpoint outcome (`BLOCKED`):
+
+- `scripts/verify.sh` stopped before Gradle execution because this macOS host has no usable Java runtime; no test, lint, APK build, or APK hash evidence was produced.
+- `adb devices -l` could not run because `adb` is not installed or discoverable on this host.
+- A bounded check of the standard Android Studio JBR, user Android SDK platform-tools, Java home registry, command path, and Spotlight index found no alternate usable JDK or `adb` installation.
+- Therefore exactly-one-authorized-device, APK install/launch, Health Connect availability, and clean zero/zero Room and Health Connect baseline facts remain unproven.
+- No device, Health Connect, Room, permission, or application state was changed. No serial number, health data, raw identifier, or provider payload was collected.
+
+Required recovery:
+
+1. Resume on a host with JDK 17, Android SDK platform 36, and `adb` available.
+2. Connect exactly one authorized physical Android device with Health Connect available.
+3. Restart the authoritative procedure from desktop verification and the clean baseline; do not infer any runtime checkpoint from this failed attempt.
+
+Gate 1 remains `BLOCKED`.
