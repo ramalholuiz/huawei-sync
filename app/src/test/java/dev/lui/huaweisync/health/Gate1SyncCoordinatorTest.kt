@@ -445,6 +445,31 @@ class Gate1SyncCoordinatorTest {
     }
 
     @Test
+    fun rerunningAnAlreadyVerifiedRecordIsANoOp() = runTest {
+        val ledger = database.syncLedgerStore(LedgerClock { 100L })
+        val coordinator = Gate1SyncCoordinator(
+            ledgerStore = ledger,
+            writer = writer,
+            confirmer = HealthWorkoutConfirmer { HealthConfirmationResult.Confirmed },
+        )
+
+        val first = coordinator.runSyntheticStrengthSync()
+        val confirmed = coordinator.confirmSyntheticStrengthSync()
+        val rerun = coordinator.runSyntheticStrengthSync()
+
+        assertTrue(first is Gate1SyncResult.Completed)
+        assertTrue(confirmed is Gate1SyncResult.Confirmed)
+        assertTrue(rerun is Gate1SyncResult.Confirmed)
+        rerun as Gate1SyncResult.Confirmed
+        assertEquals("ALREADY_VERIFIED", rerun.code)
+        assertEquals(SyncPhase.CONFIRMATION, rerun.phase)
+        assertEquals(1, writer.records.size)
+        val durable = ledger.findByClientRecordId(rerun.clientRecordId)!!
+        assertEquals(SyncStatus.VERIFIED, durable.status)
+        assertEquals(1, durable.attemptCount)
+    }
+
+    @Test
     fun absentConfirmationPreservesAcceptanceAndCanBeRetriedWithoutWriting() = runTest {
         val ledger = database.syncLedgerStore(LedgerClock { 100L })
         var confirmationCalls = 0
