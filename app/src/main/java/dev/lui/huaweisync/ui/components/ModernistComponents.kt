@@ -32,6 +32,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -248,6 +249,7 @@ private fun RowScope.BottomNavigationItem(
     Column(
         modifier = Modifier
             .weight(1f)
+            .testTag("bottom-nav-${item.key}")
             .defaultMinSize(minHeight = ModernistComponentMetrics.minimumTouchTarget)
             .clickable(role = Role.Tab, onClickLabel = item.label, onClick = onClick)
             .semantics {

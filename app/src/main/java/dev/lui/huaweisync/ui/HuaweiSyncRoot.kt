@@ -1,19 +1,24 @@
 package dev.lui.huaweisync.ui
 
 import android.content.res.Configuration
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -23,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -151,10 +157,13 @@ internal fun HuaweiSyncNavigationShell(
     gate1Entry: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    BackHandler(enabled = navigationState.canNavigateBack) {
+        navigationState.navigateBack()
+    }
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val wide = usesWidePrimaryNavigation(maxWidth)
         if (wide) {
-            Row(Modifier.fillMaxSize()) {
+            Row(Modifier.fillMaxSize().safeDrawingPadding()) {
                 WidePrimaryNavigation(
                     navigationState = navigationState,
                     modifier = Modifier.width(224.dp).fillMaxHeight(),
@@ -175,22 +184,31 @@ internal fun HuaweiSyncNavigationShell(
                 )
             }
         } else {
-            Column(Modifier.fillMaxSize()) {
-                DestinationContent(
-                    navigationState = navigationState,
-                    productSyncState = productSyncState,
-                    historyState = historyState,
-                    selectedActivityClientRecordId = selectedActivityClientRecordId,
-                    syncInProgress = syncInProgress,
-                    darkTheme = darkTheme,
-                    onToggleTheme = onToggleTheme,
-                    onHistoryRetry = onHistoryRetry,
-                    onSelectActivity = onSelectActivity,
-                    onSync = onSync,
-                    gate1Entry = gate1Entry,
-                    modifier = Modifier.weight(1f),
-                )
-                CompactPrimaryNavigation(navigationState)
+            Scaffold(
+                modifier = Modifier.fillMaxSize().testTag("app-shell"),
+                bottomBar = { CompactPrimaryNavigation(navigationState) },
+                containerColor = HuaweiSyncTheme.colors.background,
+            ) { contentPadding ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(contentPadding)
+                        .testTag("app-shell-content"),
+                ) {
+                    DestinationContent(
+                        navigationState = navigationState,
+                        productSyncState = productSyncState,
+                        historyState = historyState,
+                        selectedActivityClientRecordId = selectedActivityClientRecordId,
+                        syncInProgress = syncInProgress,
+                        darkTheme = darkTheme,
+                        onToggleTheme = onToggleTheme,
+                        onHistoryRetry = onHistoryRetry,
+                        onSelectActivity = onSelectActivity,
+                        onSync = onSync,
+                        gate1Entry = gate1Entry,
+                    )
+                }
             }
         }
 
@@ -303,7 +321,9 @@ private fun CompactPrimaryNavigation(navigationState: HuaweiSyncNavigationState)
                 CompactDestinations.single { it.route == route }.let(navigationState::navigateTo)
             }
         },
-        modifier = Modifier.testTag("compact-primary-navigation"),
+        modifier = Modifier
+            .navigationBarsPadding()
+            .testTag("global-bottom-navigation"),
     )
 }
 
@@ -324,16 +344,22 @@ private fun CompactMoreMenu(navigationState: HuaweiSyncNavigationState) {
         ModernistSurface(
             modifier = Modifier
                 .fillMaxWidth()
+                .fillMaxHeight(0.9f)
+                .navigationBarsPadding()
+                .verticalScroll(rememberScrollState())
                 .testTag("compact-more-menu")
                 .clickable(enabled = false, onClick = {}),
             backgroundColor = HuaweiSyncTheme.colors.surface1,
         ) {
             SectionHeader(title = "All destinations", eyebrow = "NAVIGATION")
             (PrimaryDestinations.filterNot { it in CompactDestinations } + Onboarding).forEach { destination ->
+                val isSettingsEntry = destination == Integrations
                 StraightEdgeButton(
-                    label = destination.label,
+                    label = if (isSettingsEntry) "Settings" else destination.label,
                     onClick = { navigationState.navigateTo(destination) },
-                    modifier = Modifier.fillMaxWidth().testTag("nav-${destination.route}"),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(if (isSettingsEntry) "nav-settings" else "nav-${destination.route}"),
                 )
             }
             StraightEdgeButton(
@@ -383,11 +409,6 @@ private fun DestinationContent(
                 onToggleTheme = onToggleTheme,
                 onSync = onSync,
                 onResolveHealthConnect = onSync,
-                onNavigate = { route ->
-                    navigationState.navigateTo(
-                        PrimaryDestinations.firstOrNull { it.route == route } ?: Dashboard,
-                    )
-                },
                 syncInProgress = syncInProgress,
             )
             Pipeline -> productSyncState?.let { state ->

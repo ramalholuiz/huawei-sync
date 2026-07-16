@@ -33,7 +33,7 @@ class DashboardScreenTest {
     fun `loading presents fact sources and disables sync`() {
         compose.setContent {
             HuaweiSyncTheme(darkTheme = true) {
-                DashboardScreen(DashboardScreenState.Loading, true, {}, {}, {}, {})
+                DashboardScreen(DashboardScreenState.Loading, true, {}, {}, {})
             }
         }
 
@@ -108,24 +108,22 @@ class DashboardScreenTest {
     }
 
     @Test
-    fun `sync fab theme and navigation callbacks are passed through`() {
+    fun `sync and theme callbacks are passed through without local navigation`() {
         var syncClicks = 0
         var themeClicks = 0
-        var destination = ""
         show(
             state = content(ProductHealthConnectStatus.READY_TO_SYNC),
             onSync = { syncClicks++ },
             onTheme = { themeClicks++ },
-            onNavigate = { destination = it },
         )
 
         compose.onNodeWithContentDescription("Sync now").assertIsEnabled().performClick()
         compose.onNodeWithContentDescription("Switch theme").performClick()
-        compose.onNodeWithContentDescription("History").performClick()
+        compose.onNodeWithContentDescription("History").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Settings").assertDoesNotExist()
 
         assertEquals(1, syncClicks)
         assertEquals(1, themeClicks)
-        assertEquals("history", destination)
     }
 
     private fun show(
@@ -133,7 +131,6 @@ class DashboardScreenTest {
         onSync: () -> Unit = {},
         onResolve: () -> Unit = {},
         onTheme: () -> Unit = {},
-        onNavigate: (String) -> Unit = {},
     ) {
         compose.setContent {
             HuaweiSyncTheme(darkTheme = true) {
@@ -143,7 +140,6 @@ class DashboardScreenTest {
                     onToggleTheme = onTheme,
                     onSync = onSync,
                     onResolveHealthConnect = onResolve,
-                    onNavigate = onNavigate,
                 )
             }
         }

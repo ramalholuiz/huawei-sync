@@ -22,6 +22,9 @@ class HuaweiSyncNavigationState internal constructor(
     var compactMenuVisible: Boolean by mutableStateOf(false)
         private set
 
+    val canNavigateBack: Boolean
+        get() = overlayDestination != null || compactMenuVisible || currentDestination != Dashboard
+
     fun navigateTo(destination: HuaweiSyncScreenDestination) {
         currentDestination = destination
         compactMenuVisible = false
@@ -43,6 +46,26 @@ class HuaweiSyncNavigationState internal constructor(
 
     fun dismissCompactMenu() {
         compactMenuVisible = false
+    }
+
+    fun navigateBack(): Boolean = when {
+        overlayDestination != null -> {
+            dismissSyncOverlay()
+            true
+        }
+        compactMenuVisible -> {
+            dismissCompactMenu()
+            true
+        }
+        currentDestination == ActivityDetail -> {
+            navigateTo(History)
+            true
+        }
+        currentDestination != Dashboard -> {
+            navigateTo(Dashboard)
+            true
+        }
+        else -> false
     }
 
     companion object {

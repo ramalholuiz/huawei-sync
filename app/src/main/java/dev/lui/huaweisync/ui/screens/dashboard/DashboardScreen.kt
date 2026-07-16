@@ -14,10 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Home
-import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material.icons.rounded.Timeline
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,8 +25,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import dev.lui.huaweisync.ui.components.ModernistBottomNavigation
-import dev.lui.huaweisync.ui.components.ModernistNavigationItem
 import dev.lui.huaweisync.ui.components.ModernistProgress
 import dev.lui.huaweisync.ui.components.ModernistStatus
 import dev.lui.huaweisync.ui.components.ModernistSurface
@@ -62,7 +56,6 @@ fun DashboardScreen(
     onToggleTheme: () -> Unit,
     onSync: () -> Unit,
     onResolveHealthConnect: () -> Unit,
-    onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier,
     syncInProgress: Boolean = false,
 ) {
@@ -90,19 +83,8 @@ fun DashboardScreen(
                     .padding(HuaweiSyncSpacing.xl),
             )
         }
-        ModernistBottomNavigation(
-            items = dashboardNavigationItems,
-            selectedKey = "dashboard",
-            onSelect = onNavigate,
-        )
     }
 }
-
-private val dashboardNavigationItems = listOf(
-    ModernistNavigationItem("dashboard", "Dashboard", Icons.Rounded.Home),
-    ModernistNavigationItem("history", "History", Icons.Rounded.Timeline),
-    ModernistNavigationItem("settings", "Settings", Icons.Rounded.Settings),
-)
 
 @Composable
 private fun DashboardTopBar(darkTheme: Boolean, onToggleTheme: () -> Unit) {
@@ -452,7 +434,13 @@ private fun previewState(
 @Composable
 private fun DashboardLoadingPreview() {
     HuaweiSyncTheme(darkTheme = true) {
-        DashboardScreen(DashboardScreenState.Loading, true, {}, {}, {}, {})
+        DashboardScreen(
+            state = DashboardScreenState.Loading,
+            darkTheme = true,
+            onToggleTheme = {},
+            onSync = {},
+            onResolveHealthConnect = {},
+        )
     }
 }
 
@@ -461,8 +449,11 @@ private fun DashboardLoadingPreview() {
 private fun DashboardEmptyPreview() {
     HuaweiSyncTheme(darkTheme = true) {
         DashboardScreen(
-            DashboardScreenState.Content(previewState(ProductHealthConnectStatus.READY_TO_SYNC)),
-            true, {}, {}, {}, {},
+            state = DashboardScreenState.Content(previewState(ProductHealthConnectStatus.READY_TO_SYNC)),
+            darkTheme = true,
+            onToggleTheme = {},
+            onSync = {},
+            onResolveHealthConnect = {},
         )
     }
 }
@@ -472,8 +463,13 @@ private fun DashboardEmptyPreview() {
 private fun DashboardBlockedPreview() {
     HuaweiSyncTheme(darkTheme = false) {
         DashboardScreen(
-            DashboardScreenState.Content(previewState(ProductHealthConnectStatus.PERMISSION_REQUIRED)),
-            false, {}, {}, {}, {},
+            state = DashboardScreenState.Content(
+                previewState(ProductHealthConnectStatus.PERMISSION_REQUIRED),
+            ),
+            darkTheme = false,
+            onToggleTheme = {},
+            onSync = {},
+            onResolveHealthConnect = {},
         )
     }
 }
@@ -483,14 +479,17 @@ private fun DashboardBlockedPreview() {
 private fun DashboardErrorPreview() {
     HuaweiSyncTheme(darkTheme = true) {
         DashboardScreen(
-            DashboardScreenState.Content(
+            state = DashboardScreenState.Content(
                 previewState(
                     status = ProductHealthConnectStatus.FAILED,
                     attemptCount = 1,
                     failure = "Health Connect write failed. Retry after reviewing availability and permission.",
                 ),
             ),
-            true, {}, {}, {}, {},
+            darkTheme = true,
+            onToggleTheme = {},
+            onSync = {},
+            onResolveHealthConnect = {},
         )
     }
 }
@@ -501,7 +500,7 @@ private fun DashboardErrorPreview() {
 private fun DashboardVerifiedPreview() {
     HuaweiSyncTheme(darkTheme = true) {
         DashboardScreen(
-            DashboardScreenState.Content(
+            state = DashboardScreenState.Content(
                 previewState(
                     status = ProductHealthConnectStatus.CONFIRMED_IN_HEALTH_CONNECT,
                     ledgerWorkoutCount = 1,
@@ -509,7 +508,10 @@ private fun DashboardVerifiedPreview() {
                     confirmed = true,
                 ),
             ),
-            true, {}, {}, {}, {},
+            darkTheme = true,
+            onToggleTheme = {},
+            onSync = {},
+            onResolveHealthConnect = {},
         )
     }
 }
