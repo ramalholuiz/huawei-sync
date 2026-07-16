@@ -48,30 +48,20 @@ fun HistoryScreen(
     onSelectActivity: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier.fillMaxSize().background(HuaweiSyncTheme.colors.background)) {
-        SectionHeader(
-            eyebrow = "READ-ONLY LEDGER",
-            title = "Activity history",
-            modifier = Modifier.padding(
-                start = HuaweiSyncSpacing.xl,
-                top = HuaweiSyncSpacing.xl,
-                end = HuaweiSyncSpacing.xl,
-                bottom = HuaweiSyncSpacing.md,
-            ),
-        )
+    Box(modifier.fillMaxSize().background(HuaweiSyncTheme.colors.background)) {
         when (state) {
-            HistoryState.Loading -> HistoryMessage(
+            HistoryState.Loading -> HistoryEmptyStateSurface(
                 title = "Loading ledger",
                 message = "Reading durable sync facts.",
                 loading = true,
                 modifier = Modifier.testTag("history-loading"),
             )
-            HistoryState.Empty -> HistoryMessage(
+            HistoryState.Empty -> HistoryEmptyStateSurface(
                 title = "No ledger activity",
                 message = "A workout appears here only after a durable ledger row exists.",
                 modifier = Modifier.testTag("history-empty"),
             )
-            is HistoryState.RetryableError -> HistoryMessage(
+            is HistoryState.RetryableError -> HistoryEmptyStateSurface(
                 title = "History unavailable",
                 message = "The read-only ledger could not be loaded. No sync result was inferred.",
                 actionLabel = "Retry read",
@@ -79,22 +69,78 @@ fun HistoryScreen(
                 code = state.safeCode,
                 modifier = Modifier.testTag("history-error"),
             )
-            is HistoryState.Content -> LazyColumn(
-                modifier = Modifier.fillMaxSize().testTag("history-content"),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    start = HuaweiSyncSpacing.xl,
-                    end = HuaweiSyncSpacing.xl,
-                    bottom = 96.dp,
-                ),
-                verticalArrangement = Arrangement.spacedBy(HuaweiSyncSpacing.md),
-            ) {
-                item {
-                    TechnicalMicrocopy("${state.activities.size} DURABLE ${if (state.activities.size == 1) "RECORD" else "RECORDS"}")
-                    Spacer(Modifier.height(HuaweiSyncSpacing.xs))
+            is HistoryState.Content -> Column(Modifier.fillMaxSize()) {
+                SectionHeader(
+                    eyebrow = "READ-ONLY LEDGER",
+                    title = "Activity history",
+                    modifier = Modifier.padding(
+                        start = HuaweiSyncSpacing.xl,
+                        top = HuaweiSyncSpacing.xl,
+                        end = HuaweiSyncSpacing.xl,
+                        bottom = HuaweiSyncSpacing.md,
+                    ),
+                )
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().testTag("history-content"),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                        start = HuaweiSyncSpacing.xl,
+                        end = HuaweiSyncSpacing.xl,
+                        bottom = 96.dp,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(HuaweiSyncSpacing.md),
+                ) {
+                    item {
+                        TechnicalMicrocopy("${state.activities.size} DURABLE ${if (state.activities.size == 1) "RECORD" else "RECORDS"}")
+                        Spacer(Modifier.height(HuaweiSyncSpacing.xs))
+                    }
+                    items(state.activities, key = ActivityHistoryItem::clientRecordId) { activity ->
+                        ActivityHistoryRow(activity, onSelectActivity)
+                    }
                 }
-                items(state.activities, key = ActivityHistoryItem::clientRecordId) { activity ->
-                    ActivityHistoryRow(activity, onSelectActivity)
-                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HistoryEmptyStateSurface(
+    title: String,
+    message: String,
+    modifier: Modifier = Modifier,
+    loading: Boolean = false,
+    actionLabel: String? = null,
+    onAction: () -> Unit = {},
+    code: String? = null,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(HuaweiSyncSpacing.xl),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        SectionHeader(
+            eyebrow = "READ-ONLY LEDGER",
+            title = "Activity history",
+            modifier = Modifier.padding(bottom = HuaweiSyncSpacing.lg),
+        )
+        ModernistSurface(Modifier.fillMaxWidth()) {
+            if (loading) {
+                CircularProgressIndicator(
+                    color = HuaweiSyncTheme.colors.accent,
+                    modifier = Modifier.padding(bottom = HuaweiSyncSpacing.lg),
+                )
+            }
+            Text(title, style = HuaweiSyncTheme.technicalTypography.value, color = HuaweiSyncTheme.colors.ink)
+            Spacer(Modifier.height(HuaweiSyncSpacing.sm))
+            Text(message, style = HuaweiSyncTheme.technicalTypography.value, color = HuaweiSyncTheme.colors.ink2)
+            code?.let {
+                Spacer(Modifier.height(HuaweiSyncSpacing.md))
+                TechnicalMicrocopy(it)
+            }
+            actionLabel?.let {
+                Spacer(Modifier.height(HuaweiSyncSpacing.lg))
+                StraightEdgeButton(label = actionLabel, onClick = onAction)
             }
         }
     }
@@ -178,39 +224,6 @@ private fun stateColor(state: ActivityReadbackState): Color = when (state) {
     ActivityReadbackState.RETRYABLE_ERROR,
     -> HuaweiSyncTheme.colors.warning
     ActivityReadbackState.ACTION_REQUIRED -> HuaweiSyncTheme.colors.accentForeground
-}
-
-@Composable
-private fun HistoryMessage(
-    title: String,
-    message: String,
-    modifier: Modifier = Modifier,
-    loading: Boolean = false,
-    actionLabel: String? = null,
-    onAction: () -> Unit = {},
-    code: String? = null,
-) {
-    Box(modifier.fillMaxSize().padding(HuaweiSyncSpacing.xl), contentAlignment = Alignment.Center) {
-        ModernistSurface(Modifier.fillMaxWidth()) {
-            if (loading) {
-                CircularProgressIndicator(
-                    color = HuaweiSyncTheme.colors.accent,
-                    modifier = Modifier.padding(bottom = HuaweiSyncSpacing.lg),
-                )
-            }
-            Text(title, style = HuaweiSyncTheme.technicalTypography.value, color = HuaweiSyncTheme.colors.ink)
-            Spacer(Modifier.height(HuaweiSyncSpacing.sm))
-            Text(message, style = HuaweiSyncTheme.technicalTypography.value, color = HuaweiSyncTheme.colors.ink2)
-            code?.let {
-                Spacer(Modifier.height(HuaweiSyncSpacing.md))
-                TechnicalMicrocopy(it)
-            }
-            actionLabel?.let {
-                Spacer(Modifier.height(HuaweiSyncSpacing.lg))
-                StraightEdgeButton(label = it, onClick = onAction)
-            }
-        }
-    }
 }
 
 private fun previewItem(state: ActivityReadbackState, suffix: String = state.name) = ActivityHistoryItem(
