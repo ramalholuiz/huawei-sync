@@ -128,3 +128,11 @@ Static scope audit:
 - The claims policy remains fail-closed: Health Connect confirmation requires exact readback evidence; write acceptance alone cannot claim confirmation; GymRats copy cannot imply Gate 2 completion; the assistant is local, canned, free-form-disabled, and declares that it contacts no remote service.
 - Dependency and source audits found no WorkManager dependency or usage, no remote-AI SDK or endpoint, and no Huawei, Strava, or other external integration SDK added by this prototype.
 - No coordinator source file is changed. Presentation routing continues to call the existing coordinator/runtime boundaries; T02 does not rewrite coordinator logic.
+
+## T03 provisional runtime evidence
+
+Provisional runtime evidence was produced on `emulator-5554` (API 35) from tested HEAD `6082796c8d888db69a755545a47a0875caf420d6` using an installed APK with SHA-256 `fab5ee651e09900dd4eae036c58b184de2bed1020e5fdaf46079e9279b48f50b`. Health Connect permission was granted. The first action was accepted, the second was confirmed by official Health Connect readback, and the third returned `ALREADY_VERIFIED`.
+
+Refreshed diagnostics reported durable status `VERIFIED`, 1 Room row, 1 attempt, 1 Health Connect match, 1 expected-version match, and exact version `true`. GymRats remains **Ready for GymRats to read**; Gate 2 has not started.
+
+This evidence remains provisional pending a repeat on the documentation commit.
