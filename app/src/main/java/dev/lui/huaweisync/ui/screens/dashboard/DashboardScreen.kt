@@ -21,6 +21,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
@@ -58,6 +59,7 @@ fun DashboardScreen(
     onResolveHealthConnect: () -> Unit,
     modifier: Modifier = Modifier,
     syncInProgress: Boolean = false,
+    onShowSyncOverlay: () -> Unit = onSync,
 ) {
     Column(
         modifier = modifier
@@ -76,11 +78,12 @@ fun DashboardScreen(
             val fabState = if (syncInProgress) SyncFabState.Syncing else state.fabState()
             SyncFab(
                 state = fabState,
-                onClick = onSync,
+                onClick = onShowSyncOverlay,
                 enabled = state !is DashboardScreenState.Loading && !syncInProgress,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(HuaweiSyncSpacing.xl),
+                    .padding(HuaweiSyncSpacing.xl)
+                    .testTag("dashboard-sync-fab"),
             )
         }
     }

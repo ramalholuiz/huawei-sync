@@ -272,10 +272,10 @@ private fun RowScope.BottomNavigationItem(
     }
 }
 
-enum class SyncFabState(val spokenState: String) {
-    Idle("Ready to sync"),
-    Syncing("Sync in progress"),
-    Complete("Sync complete"),
+enum class SyncFabState(val spokenState: String, val contentLabel: String) {
+    Idle(spokenState = "Ready to sync", contentLabel = "Sync now"),
+    Syncing(spokenState = "Sync in progress", contentLabel = "Sync in progress"),
+    Complete(spokenState = "Sync complete", contentLabel = "Synced — sync again"),
 }
 
 @Composable
@@ -285,15 +285,16 @@ fun SyncFab(
     modifier: Modifier = Modifier,
     enabled: Boolean = state != SyncFabState.Syncing,
 ) {
+    val label = state.contentLabel
     Box(
         modifier = modifier
             .size(ModernistComponentMetrics.syncFabSize)
             .clip(RectangleShape)
             .background(HuaweiSyncTheme.colors.accentContainer)
-            .clickable(enabled = enabled, role = Role.Button, onClickLabel = "Sync now", onClick = onClick)
+            .clickable(enabled = enabled, role = Role.Button, onClickLabel = label, onClick = onClick)
             .semantics {
                 role = Role.Button
-                contentDescription = "Sync now"
+                contentDescription = label
                 stateDescription = state.spokenState
             },
         contentAlignment = Alignment.Center,

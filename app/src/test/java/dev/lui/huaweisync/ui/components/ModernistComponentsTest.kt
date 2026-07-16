@@ -110,6 +110,28 @@ class ModernistComponentsTest {
     }
 
     @Test
+    fun `sync fab content description follows state so talkback does not double up`() {
+        assertEquals("Sync now", SyncFabState.Idle.contentLabel)
+        assertEquals("Sync in progress", SyncFabState.Syncing.contentLabel)
+        assertEquals("Synced — sync again", SyncFabState.Complete.contentLabel)
+
+        compose.setContent {
+            HuaweiSyncTheme {
+                SyncFab(state = SyncFabState.Complete, onClick = {})
+            }
+        }
+
+        compose.onNodeWithContentDescription("Synced — sync again")
+            .assertHasClickAction()
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.StateDescription,
+                    SyncFabState.Complete.spokenState,
+                ),
+            )
+    }
+
+    @Test
     fun `status and progress expose nonvisual state`() {
         compose.setContent {
             HuaweiSyncTheme {

@@ -9,6 +9,11 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import dev.lui.huaweisync.ui.HuaweiSyncRoot
+import dev.lui.huaweisync.ui.state.ProductGymRatsStatus
+import dev.lui.huaweisync.ui.state.ProductHealthConnectStatus
+import dev.lui.huaweisync.ui.state.ProductSyncPhase
+import dev.lui.huaweisync.ui.state.ProductSyncState
+import dev.lui.huaweisync.ui.state.ProductVerificationEvidence
 import dev.lui.huaweisync.ui.usesWidePrimaryNavigation
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -79,6 +84,38 @@ class HuaweiSyncNavigationTest {
         composeRule.onNodeWithText("No product or coordinator phase evidence is available yet.")
             .assertIsDisplayed()
     }
+
+    @Test
+    fun `dashboard fab tap opens sync overlay and triggers runtime sync exactly once`() {
+        var syncRequests = 0
+        composeRule.setContent {
+            HuaweiSyncRoot(
+                productSyncState = readyProductSyncState(),
+                onSync = { syncRequests += 1 },
+                gate1Entry = { Text("Gate 1 diagnostics content") },
+            )
+        }
+
+        composeRule.onNodeWithTag("dashboard-sync-fab").performClick()
+        composeRule.onNodeWithTag("sync-now-overlay").assertIsDisplayed()
+        composeRule.runOnIdle { assertEquals(1, syncRequests) }
+    }
+
+    private fun readyProductSyncState(): ProductSyncState = ProductSyncState(
+        healthConnectStatus = ProductHealthConnectStatus.READY_TO_SYNC,
+        gymRatsStatus = ProductGymRatsStatus.READY_TO_READ,
+        phase = ProductSyncPhase.IDLE,
+        attemptCount = 0,
+        ledgerWorkoutCount = 0,
+        verification = ProductVerificationEvidence(
+            diagnosticEvidence = null,
+            realReadbackConfirmed = false,
+            healthConnectMatchCount = null,
+            expectedVersionMatchCount = null,
+            versionMatch = null,
+        ),
+        sanitizedFailureSummary = null,
+    )
 
     @Test
     fun `responsive policy selects wide primary navigation at the audited breakpoint`() {

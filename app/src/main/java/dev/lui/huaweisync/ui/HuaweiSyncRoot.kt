@@ -135,6 +135,7 @@ fun HuaweiSyncRoot(
                         navigationState.navigateTo(ActivityDetail)
                     },
                     onSync = onSync,
+                    onShowSyncOverlay = navigationState::showSyncOverlay,
                     gate1Entry = gate1Entry,
                 )
             }
@@ -154,6 +155,7 @@ internal fun HuaweiSyncNavigationShell(
     onHistoryRetry: () -> Unit = {},
     onSelectActivity: (String) -> Unit = {},
     onSync: () -> Unit,
+    onShowSyncOverlay: () -> Unit = navigationState::showSyncOverlay,
     gate1Entry: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -179,6 +181,7 @@ internal fun HuaweiSyncNavigationShell(
                     onHistoryRetry = onHistoryRetry,
                     onSelectActivity = onSelectActivity,
                     onSync = onSync,
+                    onShowSyncOverlay = onShowSyncOverlay,
                     gate1Entry = gate1Entry,
                     modifier = Modifier.weight(1f),
                 )
@@ -206,6 +209,7 @@ internal fun HuaweiSyncNavigationShell(
                         onHistoryRetry = onHistoryRetry,
                         onSelectActivity = onSelectActivity,
                         onSync = onSync,
+                        onShowSyncOverlay = onShowSyncOverlay,
                         gate1Entry = gate1Entry,
                     )
                 }
@@ -384,6 +388,7 @@ private fun DestinationContent(
     onHistoryRetry: () -> Unit,
     onSelectActivity: (String) -> Unit,
     onSync: () -> Unit,
+    onShowSyncOverlay: () -> Unit,
     gate1Entry: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -410,6 +415,7 @@ private fun DestinationContent(
                 onSync = onSync,
                 onResolveHealthConnect = onSync,
                 syncInProgress = syncInProgress,
+                onShowSyncOverlay = onShowSyncOverlay,
             )
             Pipeline -> productSyncState?.let { state ->
                 PipelineScreen(
