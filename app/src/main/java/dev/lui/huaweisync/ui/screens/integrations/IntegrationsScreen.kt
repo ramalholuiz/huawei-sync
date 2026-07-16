@@ -220,7 +220,7 @@ private fun RouteArrow() {
         Icon(
             imageVector = Icons.Rounded.ArrowForward,
             contentDescription = null,
-            tint = HuaweiSyncTheme.colors.ink4,
+            tint = HuaweiSyncTheme.colors.ink2,
             modifier = Modifier.size(18.dp),
         )
     }
@@ -318,7 +318,7 @@ private fun statusColor(status: IntegrationStatus): Color = when (status) {
     IntegrationStatus.PREVIEW,
     IntegrationStatus.COMING_SOON,
     IntegrationStatus.NOT_CONFIGURED,
-    -> HuaweiSyncTheme.colors.ink4
+    -> HuaweiSyncTheme.colors.ink2
     IntegrationStatus.ACTION_REQUIRED,
     IntegrationStatus.RECONCILIATION_REQUIRED,
     IntegrationStatus.RETRY_REQUIRED,

@@ -103,6 +103,18 @@ class AccessibilityResponsiveRegressionTest {
     }
 
     @Test
+    fun `dark ink3 disclaimer contrast meets WCAG AA on every dark surface`() {
+        val palette = DarkHuaweiSyncColors
+        listOf(palette.background, palette.surface1, palette.surface2, palette.surface3).forEach { surface ->
+            val ratio = contrastRatio(palette.ink3, surface)
+            assertTrue(
+                "dark ink3 body-text contrast was $ratio against $surface (needs >= 4.5)",
+                ratio >= 4.5,
+            )
+        }
+    }
+
+    @Test
     fun `all ten destinations opt into the screenshot matrix`() {
         val sourceRoot = File("src/main/java/dev/lui/huaweisync/ui/screens")
         val screens = mapOf(
