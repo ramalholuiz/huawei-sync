@@ -75,7 +75,7 @@ class ProductSyncStateMapperTest {
 
         assertEquals(ProductHealthConnectStatus.ACCEPTED_AWAITING_READBACK, state.healthConnectStatus)
         assertFalse(state.verification.realReadbackConfirmed)
-        assertEquals("Ready for GymRats to read", state.gymRatsStatus.label)
+        assertEquals("Available for GymRats to import", state.gymRatsStatus.label)
     }
 
     @Test
@@ -222,7 +222,7 @@ class ProductSyncStateMapperTest {
     fun `GymRats claim vocabulary cannot imply Gate 2 completion`() {
         val labels = ProductGymRatsStatus.values().map(ProductGymRatsStatus::label)
 
-        assertEquals(listOf("Ready for GymRats to read"), labels)
+        assertEquals(listOf("Available for GymRats to import"), labels)
         assertTrue(labels.none { label ->
             listOf("confirmed", "imported", "synced", "visible").any(label.lowercase()::contains)
         })

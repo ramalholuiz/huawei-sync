@@ -50,7 +50,7 @@ class PipelineScreenTest {
         compose.onNodeWithTag("pipeline-screen").assertIsDisplayed()
         compose.onAllNodesWithText("Confirmed in Health Connect", substring = true).assertCountEquals(2)
         compose.onNodeWithTag("pipeline-screen").performScrollToIndex(4)
-        compose.onNodeWithText("Ready for GymRats to read").assertIsDisplayed()
+        compose.onNodeWithText("Available for GymRats to import").assertIsDisplayed()
         compose.onAllNodesWithText("68%", substring = true).assertCountEquals(0)
         compose.onAllNodesWithText("remaining", substring = true, ignoreCase = true).assertCountEquals(0)
     }

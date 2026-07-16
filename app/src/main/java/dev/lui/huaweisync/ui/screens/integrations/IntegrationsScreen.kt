@@ -67,9 +67,6 @@ fun IntegrationsScreen(
             SectionHeader(
                 eyebrow = "EVIDENCE-BASED CONNECTIONS",
                 title = "Integrations",
-                trailing = {
-                    TechnicalMicrocopy("${state.allProviders.size.toString().padStart(2, '0')} PROVIDERS")
-                },
             )
         }
         item { EvidenceBanner() }

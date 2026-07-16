@@ -48,7 +48,7 @@ class IntegrationStateTest {
         val gymRats = IntegrationState.from(productState = null).gymRats
 
         assertEquals(IntegrationStatus.READY_FOR_GYMRATS_TO_READ, gymRats.status)
-        assertEquals("Ready for GymRats to read", gymRats.status.label)
+        assertEquals("Available for GymRats to import", gymRats.status.label)
         assertEquals(IntegrationEvidenceLevel.LOCAL_STATE, gymRats.evidenceLevel)
     }
 

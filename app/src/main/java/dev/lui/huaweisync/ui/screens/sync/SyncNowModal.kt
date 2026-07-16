@@ -229,7 +229,7 @@ private fun modalExplanation(
     coordinatorBusy ->
         "The coordinator is running. The status below remains at the latest observed evidence until a newer result is available."
     else ->
-        "This is the latest persisted sync outcome. GymRats remains only ready to read; delivery has not been claimed."
+        "This is the latest persisted sync outcome. The workout is available for GymRats to import; delivery has not been claimed."
 }
 
 @Preview(name = "Sync modal", showBackground = true, widthDp = 412, heightDp = 760)

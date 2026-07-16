@@ -101,7 +101,7 @@ class DashboardScreenTest {
         compose.onNodeWithText("3").assertExists()
         compose.onNode(hasScrollAction()).performScrollToIndex(2)
         compose.onNode(hasScrollAction()).performTouchInput { swipeUp() }
-        compose.onNodeWithText("Ready for GymRats to read", ignoreCase = true).assertExists()
+        compose.onNodeWithText("Available for GymRats to import", ignoreCase = true).assertExists()
         compose.onNode(hasScrollAction()).performScrollToIndex(3)
         compose.onNodeWithText("Readback confirmed").assertExists()
         compose.onNodeWithText("Imported by GymRats", substring = true, ignoreCase = true).assertDoesNotExist()
@@ -131,6 +131,24 @@ class DashboardScreenTest {
 
         compose.onNodeWithTag("dashboard-failure-summary").assertDoesNotExist()
         compose.onNodeWithTag("dashboard-sync-hero").assertExists()
+    }
+
+    @Test
+    fun `confirmed hero body cites health connect and the gymrats next-open expectation`() {
+        show(
+            content(
+                status = ProductHealthConnectStatus.CONFIRMED_IN_HEALTH_CONNECT,
+                ledgerCount = 1,
+                attempts = 1,
+                confirmed = true,
+                healthConnectMatches = 1,
+                versionMatches = 1,
+            ),
+        )
+
+        compose.onNodeWithText(
+            "Confirmed in Health Connect. GymRats can import it on next open.",
+        ).assertExists()
     }
 
     @Test

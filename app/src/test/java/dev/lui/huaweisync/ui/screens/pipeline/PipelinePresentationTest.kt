@@ -85,7 +85,7 @@ class PipelinePresentationTest {
 
         assertEquals(PipelineStepState.COMPLETE, model.step(PipelineStep.VERIFICATION).state)
         assertEquals("Confirmed in Health Connect", model.healthConnectLabel)
-        assertEquals("Ready for GymRats to read", model.destinationLabel)
+        assertEquals("Available for GymRats to import", model.destinationLabel)
         assertFalse(model.destinationLabel.contains("delivered", ignoreCase = true))
         assertFalse(model.destinationLabel.contains("synced", ignoreCase = true))
     }

@@ -244,7 +244,7 @@ private fun DisabledComposer() {
 
 private val previewContext = AssistantLocalContext(
     healthConnectStatus = "Confirmed in Health Connect",
-    gymRatsStatus = "Ready for GymRats to read",
+    gymRatsStatus = "Available for GymRats to import",
     ledgerWorkoutCount = 3,
     attemptCount = 3,
     sanitizedFailureSummary = null,

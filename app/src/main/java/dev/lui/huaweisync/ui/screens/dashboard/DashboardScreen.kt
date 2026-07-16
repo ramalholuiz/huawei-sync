@@ -367,7 +367,7 @@ private fun ProductHealthConnectStatus.supportingText(): String = when (this) {
     ProductHealthConnectStatus.READY_TO_SYNC -> "Health Connect is available and the required write permission is granted."
     ProductHealthConnectStatus.WRITE_IN_PROGRESS -> "A workout is being written using the existing sync coordinator."
     ProductHealthConnectStatus.ACCEPTED_AWAITING_READBACK -> "The write was accepted, but a matching Health Connect readback has not confirmed it yet."
-    ProductHealthConnectStatus.CONFIRMED_IN_HEALTH_CONNECT -> "A matching deterministic record was read back from Health Connect."
+    ProductHealthConnectStatus.CONFIRMED_IN_HEALTH_CONNECT -> "Confirmed in Health Connect. GymRats can import it on next open."
     ProductHealthConnectStatus.RECONCILIATION_REQUIRED -> "The durable ledger needs reconciliation before another write can be trusted."
     ProductHealthConnectStatus.RETRY_REQUIRED -> "The last known outcome permits a retry. Review the status before trying again."
     ProductHealthConnectStatus.ACTION_REQUIRED -> "Health Connect requires action before sync can continue."

@@ -30,7 +30,7 @@ enum class ProductHealthConnectStatus(val label: String) {
 
 /** Gate 2 has not passed, so no stronger GymRats claim is representable. */
 enum class ProductGymRatsStatus(val label: String) {
-    READY_TO_READ("Ready for GymRats to read"),
+    READY_TO_READ("Available for GymRats to import"),
 }
 
 enum class ProductSyncPhase {

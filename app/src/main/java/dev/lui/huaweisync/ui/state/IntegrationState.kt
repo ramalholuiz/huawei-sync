@@ -15,7 +15,7 @@ enum class IntegrationProvider(val displayName: String, val monogram: String) {
 /** Closed vocabulary prevents the screen from inventing successful delivery or consumer evidence. */
 enum class IntegrationStatus(val label: String) {
     CONFIRMED_IN_HEALTH_CONNECT("Confirmed in Health Connect"),
-    READY_FOR_GYMRATS_TO_READ("Ready for GymRats to read"),
+    READY_FOR_GYMRATS_TO_READ("Available for GymRats to import"),
     AVAILABLE_THROUGH_HEALTH_CONNECT("Available through Health Connect"),
     NOT_CONFIGURED("Not configured"),
     PREVIEW("Preview"),

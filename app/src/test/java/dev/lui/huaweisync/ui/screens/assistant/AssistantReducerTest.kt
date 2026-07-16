@@ -14,7 +14,7 @@ import org.junit.Test
 class AssistantReducerTest {
     private val context = AssistantLocalContext(
         healthConnectStatus = "Health Connect permission required",
-        gymRatsStatus = "Ready for GymRats to read",
+        gymRatsStatus = "Available for GymRats to import",
         ledgerWorkoutCount = 2,
         attemptCount = 3,
         sanitizedFailureSummary = "Permission is required before sync can continue.",
