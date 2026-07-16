@@ -112,7 +112,7 @@ private fun DashboardTopBar(darkTheme: Boolean, onToggleTheme: () -> Unit) {
                 Text("H", color = Color.White, style = MaterialTheme.typography.titleMedium)
             }
             Column {
-                Text("Dashboard", color = HuaweiSyncTheme.colors.ink, style = MaterialTheme.typography.titleMedium)
+                Text("Dashboard", color = HuaweiSyncTheme.colors.ink, style = MaterialTheme.typography.headlineLarge)
                 TechnicalMicrocopy("LIVE PRODUCT STATE")
             }
         }

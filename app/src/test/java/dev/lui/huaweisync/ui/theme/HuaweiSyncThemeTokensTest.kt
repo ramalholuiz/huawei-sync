@@ -73,4 +73,10 @@ class HuaweiSyncThemeTokensTest {
         assertEquals(1.4.sp, HuaweiSyncTechnicalTypography.label.letterSpacing)
         assertEquals(FontFamily.Monospace, HuaweiSyncTechnicalTypography.value.fontFamily)
     }
+
+    @Test
+    fun `page title role hits Direction A's 28sp ExtraBold heading`() {
+        assertEquals(28.sp, HuaweiSyncTypography.headlineLarge.fontSize)
+        assertEquals(FontWeight.ExtraBold, HuaweiSyncTypography.headlineLarge.fontWeight)
+    }
 }
