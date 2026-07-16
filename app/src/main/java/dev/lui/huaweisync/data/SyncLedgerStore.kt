@@ -29,6 +29,10 @@ class SyncLedgerStore(
     suspend fun findByClientRecordId(clientRecordId: String): SyncLedgerEntry? =
         dao.findByClientRecordId(clientRecordId)?.toEntry()
 
+    /** Returns a deterministic, most-recently-updated-first snapshot for presentation. */
+    suspend fun listHistory(): List<SyncLedgerEntry> =
+        dao.listHistory().map(SyncLedgerEntity::toEntry)
+
     override suspend fun findBySource(sourceProvider: String, sourceRecordId: String): SyncLedgerEntry? =
         dao.findBySource(sourceProvider, sourceRecordId)?.toEntry()
 

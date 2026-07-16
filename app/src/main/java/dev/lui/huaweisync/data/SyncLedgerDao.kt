@@ -17,6 +17,14 @@ interface SyncLedgerDao {
     @Query("SELECT COUNT(*) FROM sync_ledger WHERE clientRecordId = :clientRecordId")
     suspend fun countByClientRecordId(clientRecordId: String): Int
 
+    @Query(
+        """
+        SELECT * FROM sync_ledger
+        ORDER BY updatedAtEpochMillis DESC, clientRecordId ASC
+        """,
+    )
+    suspend fun listHistory(): List<SyncLedgerEntity>
+
     @Insert
     suspend fun insert(entity: SyncLedgerEntity)
 
