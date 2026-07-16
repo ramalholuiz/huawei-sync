@@ -18,7 +18,7 @@ class HuaweiSyncThemeTokensTest {
         assertEquals(Color(0xFFF3F2F2), DarkHuaweiSyncColors.ink)
         assertEquals(Color(0x9EF3F2F2), DarkHuaweiSyncColors.prototypeInk2)
         assertEquals(Color(0xFFAAA8A8), DarkHuaweiSyncColors.ink2)
-        assertEquals(Color(0x61F3F2F2), DarkHuaweiSyncColors.ink3)
+        assertEquals(Color(0x85F3F2F2), DarkHuaweiSyncColors.ink3)
         assertEquals(Color(0x2EF3F2F2), DarkHuaweiSyncColors.ink4)
         assertEquals(Color(0x1AF3F2F2), DarkHuaweiSyncColors.line)
         assertEquals(Color(0x38F3F2F2), DarkHuaweiSyncColors.lineStrong)
