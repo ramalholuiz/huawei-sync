@@ -157,9 +157,9 @@ private fun DashboardContent(sync: ProductSyncState, onResolveHealthConnect: () 
             start = HuaweiSyncSpacing.lg,
             top = HuaweiSyncSpacing.lg,
             end = HuaweiSyncSpacing.lg,
-            bottom = 112.dp,
+            bottom = 144.dp,
         ),
-        verticalArrangement = Arrangement.spacedBy(HuaweiSyncSpacing.lg),
+        verticalArrangement = Arrangement.spacedBy(HuaweiSyncSpacing.xxl),
     ) {
         item { SyncHero(sync = sync, onResolveHealthConnect = onResolveHealthConnect) }
         item { LedgerSummary(sync) }
@@ -227,7 +227,7 @@ private fun SyncHero(sync: ProductSyncState, onResolveHealthConnect: () -> Unit)
 private fun LedgerSummary(sync: ProductSyncState) {
     Column {
         SectionHeader(title = "Recent activity", eyebrow = "DURABLE LEDGER")
-        ModernistSurface(modifier = Modifier.fillMaxWidth()) {
+        ModernistSurface(modifier = Modifier.fillMaxWidth(), contentPadding = HuaweiSyncSpacing.xl) {
             if (sync.ledgerWorkoutCount == 0) {
                 Text("No workouts recorded yet", color = HuaweiSyncTheme.colors.ink, style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(HuaweiSyncSpacing.sm))
@@ -249,7 +249,7 @@ private fun LedgerSummary(sync: ProductSyncState) {
 private fun ConnectedServices(sync: ProductSyncState) {
     Column {
         SectionHeader(title = "Connected services", eyebrow = "CURRENT FACTS")
-        ModernistSurface(modifier = Modifier.fillMaxWidth()) {
+        ModernistSurface(modifier = Modifier.fillMaxWidth(), contentPadding = HuaweiSyncSpacing.xl) {
             ServiceRow(
                 monogram = "HC",
                 title = "Health Connect",
@@ -269,7 +269,7 @@ private fun ConnectedServices(sync: ProductSyncState) {
 private fun VerificationSummary(sync: ProductSyncState) {
     Column {
         SectionHeader(title = "Verification", eyebrow = "HEALTH CONNECT READBACK")
-        ModernistSurface(modifier = Modifier.fillMaxWidth()) {
+        ModernistSurface(modifier = Modifier.fillMaxWidth(), contentPadding = HuaweiSyncSpacing.xl) {
             val verification = sync.verification
             Text(
                 text = if (verification.realReadbackConfirmed) "Readback confirmed" else "Readback not yet confirmed",
@@ -298,6 +298,7 @@ private fun FailureSummary(summary: String) {
     ModernistSurface(
         modifier = Modifier.fillMaxWidth(),
         borderColor = HuaweiSyncTheme.colors.accent,
+        contentPadding = HuaweiSyncSpacing.xl,
     ) {
         TechnicalMicrocopy("SANITIZED FAILURE SUMMARY")
         Spacer(Modifier.height(HuaweiSyncSpacing.sm))

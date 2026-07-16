@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
@@ -105,6 +106,31 @@ class DashboardScreenTest {
         compose.onNode(hasScrollAction()).performScrollToIndex(3)
         compose.onNodeWithText("Readback confirmed").assertExists()
         compose.onNodeWithText("Imported by GymRats", substring = true, ignoreCase = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `list bottom padding keeps the last card visible above the sync fab`() {
+        show(
+            content(
+                status = ProductHealthConnectStatus.CONFIRMED_IN_HEALTH_CONNECT,
+                ledgerCount = 1,
+                attempts = 1,
+                confirmed = true,
+                healthConnectMatches = 1,
+                versionMatches = 1,
+            ),
+        )
+
+        compose.onNode(hasScrollAction()).performScrollToIndex(3)
+
+        val fabTop = compose.onNodeWithTag("dashboard-sync-fab")
+            .fetchSemanticsNode().boundsInRoot.top
+        val verificationBottom = compose.onNodeWithText("Readback confirmed")
+            .fetchSemanticsNode().boundsInRoot.bottom
+
+        assert(verificationBottom < fabTop) {
+            "Verification card ($verificationBottom) overlaps the FAB (top $fabTop)."
+        }
     }
 
     @Test
