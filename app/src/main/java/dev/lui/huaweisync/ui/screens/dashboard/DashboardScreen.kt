@@ -226,7 +226,7 @@ private fun SyncHero(sync: ProductSyncState, onResolveHealthConnect: () -> Unit)
 @Composable
 private fun LedgerSummary(sync: ProductSyncState) {
     Column {
-        SectionHeader(title = "Recent activity", eyebrow = "DURABLE LEDGER")
+        SectionHeader(title = "Recent activity")
         ModernistSurface(modifier = Modifier.fillMaxWidth(), contentPadding = HuaweiSyncSpacing.xl) {
             if (sync.ledgerWorkoutCount == 0) {
                 Text("No workouts recorded yet", color = HuaweiSyncTheme.colors.ink, style = MaterialTheme.typography.titleMedium)
@@ -248,7 +248,7 @@ private fun LedgerSummary(sync: ProductSyncState) {
 @Composable
 private fun ConnectedServices(sync: ProductSyncState) {
     Column {
-        SectionHeader(title = "Connected services", eyebrow = "CURRENT FACTS")
+        SectionHeader(title = "Connected services")
         ModernistSurface(modifier = Modifier.fillMaxWidth(), contentPadding = HuaweiSyncSpacing.xl) {
             ServiceRow(
                 monogram = "HC",
@@ -268,7 +268,7 @@ private fun ConnectedServices(sync: ProductSyncState) {
 @Composable
 private fun VerificationSummary(sync: ProductSyncState) {
     Column {
-        SectionHeader(title = "Verification", eyebrow = "HEALTH CONNECT READBACK")
+        SectionHeader(title = "Verification")
         ModernistSurface(modifier = Modifier.fillMaxWidth(), contentPadding = HuaweiSyncSpacing.xl) {
             val verification = sync.verification
             Text(

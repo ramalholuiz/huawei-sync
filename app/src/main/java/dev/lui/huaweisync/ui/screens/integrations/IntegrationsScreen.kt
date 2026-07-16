@@ -71,13 +71,10 @@ fun IntegrationsScreen(
         }
         item { EvidenceBanner() }
         item {
-            TechnicalMicrocopy("CURRENT ROUTE")
-            Spacer(Modifier.height(HuaweiSyncSpacing.sm))
             ActiveRoute(state)
         }
         item {
             SectionHeader(
-                eyebrow = "ACTIVE PATH",
                 title = "Android health exchange",
                 trailing = { TechnicalMicrocopy("READBACK GATED") },
             )
@@ -87,7 +84,6 @@ fun IntegrationsScreen(
         }
         item {
             SectionHeader(
-                eyebrow = "ROADMAP",
                 title = "Future providers",
                 trailing = { TechnicalMicrocopy("NO ACTIVE CONNECTION") },
             )

@@ -78,7 +78,6 @@ fun PipelineScreen(
         }
         item {
             PipelineEndpointCard(
-                eyebrow = "SOURCE",
                 title = "Gate 1 synthetic workout",
                 detail = "Huawei Health import is not connected yet.",
             )
@@ -88,14 +87,12 @@ fun PipelineScreen(
         }
         item {
             PipelineEndpointCard(
-                eyebrow = "ANDROID HUB",
                 title = "Health Connect",
                 detail = presentation.healthConnectLabel,
             )
         }
         item {
             PipelineEndpointCard(
-                eyebrow = "DESTINATION CLAIM",
                 title = "GymRats",
                 detail = presentation.destinationLabel,
             )
@@ -124,9 +121,9 @@ fun PipelineScreen(
 }
 
 @Composable
-private fun PipelineEndpointCard(eyebrow: String, title: String, detail: String) {
+private fun PipelineEndpointCard(title: String, detail: String, eyebrow: String? = null) {
     ModernistSurface(modifier = Modifier.fillMaxWidth()) {
-        TechnicalMicrocopy(eyebrow)
+        if (eyebrow != null) TechnicalMicrocopy(eyebrow)
         Text(title, style = MaterialTheme.typography.titleLarge)
         Text(detail, color = HuaweiSyncTheme.colors.ink2, style = MaterialTheme.typography.bodyMedium)
     }

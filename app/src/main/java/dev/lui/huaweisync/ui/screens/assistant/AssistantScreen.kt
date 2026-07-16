@@ -70,7 +70,7 @@ fun AssistantScreen(
     ) {
         item {
             SectionHeader(
-                eyebrow = "${state.experienceLabel.uppercase()} · DETERMINISTIC LOCAL",
+                eyebrow = "${state.experienceLabel.uppercase()} · LOCAL ONLY",
                 title = "AI Assistant",
                 trailing = { TechnicalMicrocopy("NO NETWORK") },
             )
@@ -78,7 +78,6 @@ fun AssistantScreen(
         item { LocalOnlyNotice() }
         item {
             SectionHeader(
-                eyebrow = "ASK · LOCAL CONCEPT",
                 title = "Sync assistant",
                 trailing = {
                     if (state.messages.size > 1) {

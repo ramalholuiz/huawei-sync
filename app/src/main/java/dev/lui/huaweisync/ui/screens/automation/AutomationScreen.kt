@@ -85,7 +85,6 @@ fun AutomationScreen(
         item { AutomationOverview(state) }
         item {
             SectionHeader(
-                eyebrow = "TRIGGER LIBRARY",
                 title = "Choose how sync could start",
                 trailing = { TechnicalMicrocopy("${state.triggers.size.toString().padStart(2, '0')} CONCEPTS") },
             )
