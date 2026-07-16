@@ -76,9 +76,8 @@ class DashboardScreenTest {
             ),
         )
 
-        compose.onNodeWithText("Sync failed").assertExists()
-        compose.onNode(hasScrollAction()).performScrollToIndex(4)
         compose.onNodeWithText("Health Connect write failed.").assertExists()
+        compose.onNodeWithText("Sync failed").assertExists()
     }
 
     @Test
@@ -106,6 +105,32 @@ class DashboardScreenTest {
         compose.onNode(hasScrollAction()).performScrollToIndex(3)
         compose.onNodeWithText("Readback confirmed").assertExists()
         compose.onNodeWithText("Imported by GymRats", substring = true, ignoreCase = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `sanitized failure summary renders above the hero when a failure is set`() {
+        show(
+            content(
+                status = ProductHealthConnectStatus.FAILED,
+                failure = "Health Connect write failed. Retry after reviewing availability and permission.",
+            ),
+        )
+
+        val failureTop = compose.onNodeWithTag("dashboard-failure-summary")
+            .fetchSemanticsNode().boundsInRoot.top
+        val heroTop = compose.onNodeWithTag("dashboard-sync-hero")
+            .fetchSemanticsNode().boundsInRoot.top
+        assert(failureTop < heroTop) {
+            "failure summary top=$failureTop must be above hero top=$heroTop"
+        }
+    }
+
+    @Test
+    fun `failure summary stays hidden and hero renders when failure is null`() {
+        show(content(status = ProductHealthConnectStatus.READY_TO_SYNC))
+
+        compose.onNodeWithTag("dashboard-failure-summary").assertDoesNotExist()
+        compose.onNodeWithTag("dashboard-sync-hero").assertExists()
     }
 
     @Test

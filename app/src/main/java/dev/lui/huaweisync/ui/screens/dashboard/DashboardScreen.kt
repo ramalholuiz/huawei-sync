@@ -161,13 +161,13 @@ private fun DashboardContent(sync: ProductSyncState, onResolveHealthConnect: () 
         ),
         verticalArrangement = Arrangement.spacedBy(HuaweiSyncSpacing.xxl),
     ) {
-        item { SyncHero(sync = sync, onResolveHealthConnect = onResolveHealthConnect) }
-        item { LedgerSummary(sync) }
-        item { ConnectedServices(sync) }
-        item { VerificationSummary(sync) }
         sync.sanitizedFailureSummary?.let { summary ->
-            item { FailureSummary(summary) }
+            item(key = "failure-summary") { FailureSummary(summary) }
         }
+        item(key = "sync-hero") { SyncHero(sync = sync, onResolveHealthConnect = onResolveHealthConnect) }
+        item(key = "ledger-summary") { LedgerSummary(sync) }
+        item(key = "connected-services") { ConnectedServices(sync) }
+        item(key = "verification-summary") { VerificationSummary(sync) }
     }
 }
 
@@ -175,7 +175,7 @@ private fun DashboardContent(sync: ProductSyncState, onResolveHealthConnect: () 
 private fun SyncHero(sync: ProductSyncState, onResolveHealthConnect: () -> Unit) {
     val visualStatus = sync.healthConnectStatus.toModernistStatus()
     ModernistSurface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().testTag("dashboard-sync-hero"),
         backgroundColor = HuaweiSyncTheme.colors.surface2,
         borderColor = when (visualStatus) {
             ModernistStatus.Error -> HuaweiSyncTheme.colors.accent
@@ -296,7 +296,7 @@ private fun VerificationSummary(sync: ProductSyncState) {
 @Composable
 private fun FailureSummary(summary: String) {
     ModernistSurface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().testTag("dashboard-failure-summary"),
         borderColor = HuaweiSyncTheme.colors.accent,
         contentPadding = HuaweiSyncSpacing.xl,
     ) {
