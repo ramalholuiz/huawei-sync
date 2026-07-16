@@ -126,7 +126,7 @@ private fun OnboardingHeader(darkTheme: Boolean, onToggleTheme: () -> Unit) {
             }
             Column {
                 Text("Huawei Sync", color = HuaweiSyncTheme.colors.ink, style = MaterialTheme.typography.titleMedium)
-                TechnicalMicrocopy("STEP 01 / 04")
+                TechnicalMicrocopy("SETUP")
             }
         }
         StraightEdgeButton(

@@ -42,6 +42,24 @@ class OnboardingScreenTest {
     }
 
     @Test
+    fun `header does not claim invented step counters`() {
+        compose.setContent {
+            HuaweiSyncTheme(darkTheme = false) {
+                OnboardingScreen(
+                    state = OnboardingScreenState(),
+                    darkTheme = false,
+                    onStartSetup = {},
+                    onContinueExistingSetup = {},
+                    onToggleTheme = {},
+                )
+            }
+        }
+
+        compose.onNodeWithText("STEP 01 / 04", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("STEP", substring = true, ignoreCase = false).assertDoesNotExist()
+    }
+
+    @Test
     fun `loading state and all onboarding actions remain explicit`() {
         var setupClicks = 0
         var continueClicks = 0
