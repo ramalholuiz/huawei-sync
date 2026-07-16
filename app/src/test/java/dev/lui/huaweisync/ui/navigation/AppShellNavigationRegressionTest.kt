@@ -51,15 +51,24 @@ class AppShellNavigationRegressionTest {
     }
 
     @Test
-    fun `settings remains accessible through More without a second bar`() {
+    fun `integrations remains accessible through More under one consistent label`() {
         composeRule.setContent { AppUnderTest() }
 
         composeRule.onNodeWithContentDescription("More").performClick()
-        composeRule.onNodeWithTag("nav-settings").assertIsDisplayed().performClick()
+        composeRule.onNodeWithTag("nav-integrations").assertIsDisplayed().performClick()
         composeRule.onNodeWithText("Integrations").assertIsDisplayed()
         composeRule.onAllNodesWithTag("global-bottom-navigation")
             .assertCountEquals(1)
         composeRule.onNodeWithTag("bottom-nav-more").assertIsSelected()
+    }
+
+    @Test
+    fun `more menu drops the settings relabel so integrations shows one name`() {
+        composeRule.setContent { AppUnderTest() }
+
+        composeRule.onNodeWithContentDescription("More").performClick()
+        composeRule.onNodeWithTag("nav-settings").assertDoesNotExist()
+        composeRule.onNodeWithTag("nav-integrations").assertIsDisplayed()
     }
 
     @Test
@@ -85,6 +94,17 @@ class AppShellNavigationRegressionTest {
         assertTrue(state.navigateBack())
         assertSame(Dashboard, state.currentDestination)
         assertFalse(state.canNavigateBack)
+    }
+
+    @Test
+    fun `nav shell contains no residual settings label for the integrations route`() {
+        val projectRoot = findProjectRoot()
+        val shell = projectRoot.resolve("app/src/main/java/dev/lui/huaweisync/ui/HuaweiSyncRoot.kt")
+        val text = shell.readText()
+        assertFalse(
+            "Settings relabel resurfaced in ${shell.fileName}",
+            text.contains("\"Settings\"") || text.contains("nav-settings"),
+        )
     }
 
     @Test

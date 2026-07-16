@@ -357,13 +357,12 @@ private fun CompactMoreMenu(navigationState: HuaweiSyncNavigationState) {
         ) {
             SectionHeader(title = "All destinations", eyebrow = "NAVIGATION")
             (PrimaryDestinations.filterNot { it in CompactDestinations } + Onboarding).forEach { destination ->
-                val isSettingsEntry = destination == Integrations
                 StraightEdgeButton(
-                    label = if (isSettingsEntry) "Settings" else destination.label,
+                    label = destination.label,
                     onClick = { navigationState.navigateTo(destination) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag(if (isSettingsEntry) "nav-settings" else "nav-${destination.route}"),
+                        .testTag("nav-${destination.route}"),
                 )
             }
             StraightEdgeButton(
