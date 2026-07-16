@@ -33,15 +33,6 @@ require_text() {
   fi
 }
 
-require_absent_text() {
-  local relative_path=$1
-  local forbidden=$2
-  local description=$3
-  if [[ -f "$repo_root/$relative_path" ]] && grep -Fq -- "$forbidden" "$repo_root/$relative_path"; then
-    blocked "$description ($relative_path)"
-  fi
-}
-
 require_file gradlew
 require_file gradlew.bat
 require_file gradle/wrapper/gradle-wrapper.jar
@@ -93,12 +84,16 @@ require_text docs/gate1-runtime-validation.md 'Gate 1 remains **BLOCKED**' \
   'runtime guide must not convert a procedure into device evidence'
 require_text docs/gates.md 'docs/gate1-runtime-validation.md' \
   'gate checklist must link its authoritative runtime procedure'
-require_text docs/progress.md 'Runtime evidence recorded: no' \
-  'progress must distinguish implementation from unrecorded device evidence'
+require_text docs/progress.md 'Runtime evidence recorded: yes' \
+  'progress must record completed authoritative device evidence'
 require_text app/src/main/AndroidManifest.xml 'android.permission.health.READ_EXERCISE' \
   'manifest must declare exercise read permission'
 require_text app/src/main/AndroidManifest.xml 'android.permission.health.WRITE_EXERCISE' \
   'manifest must declare exercise write permission'
+require_text app/src/main/AndroidManifest.xml 'androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE' \
+  'manifest must resolve the Health Connect permission rationale intent'
+require_text app/src/main/AndroidManifest.xml 'android.intent.action.VIEW_PERMISSION_USAGE' \
+  'manifest must expose the Android 14+ Health Connect privacy-policy alias'
 require_text app/src/main/java/dev/lui/huaweisync/domain/SyntheticWorkoutFactory.kt \
   'WorkoutMetadataPolicy.clientRecordIdFor' \
   'synthetic record ID must come from the deterministic metadata policy'
@@ -117,11 +112,11 @@ require_text app/src/main/java/dev/lui/huaweisync/diagnostics/Gate1Diagnostics.k
 require_text app/src/main/java/dev/lui/huaweisync/MainActivity.kt \
   'DiagnosticNextAction.NONE -> durableStatus == SyncStatus.VERIFIED' \
   'verified diagnostics must expose the explicit third idempotency run without opening other states'
-require_absent_text docs/gates.md 'Status: PASS' \
-  'Gate 1 must not be marked PASS without recorded device evidence'
+require_text docs/gates.md 'Status: PASS' \
+  'Gate 1 must be marked PASS after recorded authoritative device evidence'
 
 if (( status != 0 )); then
   exit "$status"
 fi
 
-echo "PASS: Gate 1 checked-in baseline and cross-platform runtime contract are present."
+echo "PASS: Gate 1 checked-in baseline, runtime contract, and authoritative evidence are present."

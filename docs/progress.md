@@ -91,3 +91,25 @@ Required recovery:
 3. Restart the authoritative procedure from desktop verification and the clean baseline; do not infer any runtime checkpoint from this failed attempt.
 
 Gate 1 remains `BLOCKED`.
+
+## 2026-07-15 — Gate 1 authoritative Windows emulator proof
+
+Runtime evidence recorded: yes
+
+Final evidence (`VERIFIED`):
+
+- Validated exact commit `2a61059955a2670949693204db3fd09d464a1e4e` in the clean detached Windows worktree on `DESKTOP-3CTKCGT`.
+- Windows used OpenJDK 21.0.10, Android SDK platform 36, adb 37.0.0, and boot-complete `emulator-5554`.
+- `gradlew.bat testDebugUnitTest`, `gradlew.bat testReleaseUnitTest`, `gradlew.bat clean test lint assembleDebug`, Windows Git Bash `scripts/verify.sh`, and `git diff --check` all passed.
+- Debug and release each ran 103 tests with zero failures/errors. Lint reported zero errors and 15 warnings.
+- Produced `app-debug.apk` at 10,927,037 bytes with SHA-256 `cac3ae07aa96de8657ecc540eeabbc863d3fbbe65faf543862ccd2eab4e9145e`.
+- Fixed the real Health Connect controller prerequisite by declaring the official rationale activity and Android 14+ permission-usage alias; its regression test passed on Windows.
+- Granted real exercise-session permissions through the official Health Connect UI.
+- A real synthetic `ExerciseSessionRecord` write and bounded official readback produced exactly one Health Connect match, one expected-version match, one Room row, one attempt, client record version 1, and `version_match=true`.
+- Fixed verified reruns so the third action is an `ALREADY_VERIFIED` no-op; the Windows regression test and real emulator action both preserved Health Connect 1, Room 1, and attempts 1.
+- Uninstalling the app reset Room to 0 while Health Connect remained 1. Reinstalling the same APK and syncing reconstructed Room 1 with one attempt and no second Health Connect record.
+- Sanitized exports recorded `VERIFIED`, permission `GRANTED`, exact count/version facts, closed reconciliation, and finalized local state. No record ID, provider payload, or health payload was exported.
+
+Gate 1 status: `PASS`.
+
+Physical-device resilience validation is deferred. Gate 2 and manual GymRats validation have not started.

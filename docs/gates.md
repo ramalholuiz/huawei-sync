@@ -4,7 +4,7 @@ Status values: `TODO`, `PASS`, `BLOCKED`.
 
 ## Gate 1: Health Connect synthetic write
 
-Status: BLOCKED
+Status: PASS
 
 Purpose: write one synthetic strength-training `ExerciseSessionRecord` to Health Connect idempotently.
 
@@ -42,30 +42,19 @@ Implementation evidence added:
 - Room ledger: `AppDatabase`, `SyncLedgerEntity`, `SyncLedgerDao` with unique primary `clientRecordId`.
 - Idempotency test: `Gate1SyncCoordinatorTest` runs sync three times and asserts one ledger row for the deterministic client record id.
 
-Build, install, and launch evidence (`VERIFIED`):
+Authoritative Windows and emulator evidence (`VERIFIED`):
 
-- Commit `15e3fbd` provides the checksum-verified Gradle Wrapper 8.11.1, AGP 8.10.1, `compileSdk 36`, `targetSdk 35`, and Health Connect 1.1.0 baseline.
-- Windows verification had usable Java and passed `clean test lint assembleDebug`; `scripts/verify.ps1` now provides the checked-in Windows-native equivalent of `scripts/verify.sh`.
-- Debug and release unit tests passed, and the debug APK was generated.
-- `adb` installed the debug APK successfully on `emulator-5554`.
-- `MainActivity` launched without an immediate crash.
-- The app reported Health Connect `Available`.
+- Exact commit: `2a61059955a2670949693204db3fd09d464a1e4e`; isolated Windows worktree clean and detached at that commit.
+- Host: `DESKTOP-3CTKCGT`; OpenJDK 21.0.10; Android SDK platform 36; adb 37.0.0; `emulator-5554` connected, authorized, and boot-complete.
+- Fresh Windows commands passed: `gradlew.bat testDebugUnitTest`, `gradlew.bat testReleaseUnitTest`, `gradlew.bat clean test lint assembleDebug`, Windows Git Bash `scripts/verify.sh`, and `git diff --check`.
+- Debug tests: 103, failures/errors: 0. Release tests: 103, failures/errors: 0. Lint: 0 errors, 15 warnings.
+- Exact APK: `C:\luiz\Projetos Estudos\huawei-sync-m001\app\build\outputs\apk\debug\app-debug.apk`; 10,927,037 bytes; SHA-256 `cac3ae07aa96de8657ecc540eeabbc863d3fbbe65faf543862ccd2eab4e9145e`.
+- The official Health Connect controller granted exercise read/write access after resolving the app's rationale/privacy-policy activity.
+- Real synthetic write and bounded official readback converged to Health Connect count 1, expected-version count 1, Room count 1, attempt count 1, client record version 1, and `version_match=true`.
+- Authoritative confirmation produced `VERIFIED`; the third action produced the `ALREADY_VERIFIED` no-op with unchanged Health Connect, Room, attempt, and version facts. Reconciliation remained closed.
+- After uninstalling and reinstalling the same APK, Room began at 0 while Health Connect remained at 1. The deterministic sync reconstructed exactly one Room row with one attempt, and confirmation converged to `VERIFIED` without a second Health Connect record.
 
-This settles the build/install/launch baseline; it does not settle the Health Connect runtime contract. Follow the authoritative cross-platform procedure in [`docs/gate1-runtime-validation.md`](gate1-runtime-validation.md). Gate 1 therefore remains `BLOCKED` on exactly these five runtime proofs:
-
-- actual Health Connect permission grant for the exercise-session read/write permissions;
-- a real synthetic `ExerciseSessionRecord` write;
-- real Health Connect readback of the synthetic record;
-- three-run idempotency evidence against both Health Connect and the Room ledger;
-- reinstall behavior confirming that deterministic deduplication survives app reinstall.
-
-This list is exhaustive for Gate 1. Manual GymRats validation belongs to Gate 2 and is not a Gate 1 blocker.
-
-Remaining milestone ownership is frozen as follows:
-
-- S02 implements deterministic identity, the canonical content hash, stable semantic versioning, and the complete Room ledger schema and transitions.
-- S03 implements and tests the coordinator write, finalize, confirm, and reconcile contracts.
-- S04 implements diagnostics and the runtime validation procedure that collects the five Gate 1 proofs above.
+All five Gate 1 runtime proofs in [`docs/gate1-runtime-validation.md`](gate1-runtime-validation.md) now have objective emulator evidence. Gate 1 is `PASS`. Physical-device resilience validation remains deferred and is not substituted for this emulator proof. Manual GymRats validation belongs exclusively to Gate 2 and has not started.
 
 Huawei and Strava integrations, direct GymRats APIs, WorkManager, `StepsRecord`, and P1 metrics remain out of scope for Gate 1. The POSIX and Windows verification entry points are `scripts/verify.sh` and `scripts/verify.ps1`, respectively.
 
