@@ -22,4 +22,4 @@ Rules:
 
 | Name | Owner | Official URL | License / terms | Attribution | Local file | Production-approved |
 | --- | --- | --- | --- | --- | --- | --- |
-| _no assets registered yet_ | | | | | | |
+| material-icons-extended (Rounded set — Sync, Check, ErrorOutline, MoreHoriz) | Google | https://fonts.google.com/icons | Apache-2.0 | © Google, Apache-2.0 (declared via Gradle dependency) | dependency: `androidx.compose.material:material-icons-extended` | yes |
