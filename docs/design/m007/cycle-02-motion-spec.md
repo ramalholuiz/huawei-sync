@@ -10,9 +10,11 @@ Cycle 2 introduces three motion families. They are additive to Cycle 1's rail mo
 
 | Family | Purpose | Where | Reduced-motion fallback |
 |---|---|---|---|
-| **shared identity** | Carry the workout's identity across the list-to-detail boundary | History row → Detail identity band | Disabled — instant swap; both surfaces render their static layout |
+| **identity arrival** | Communicate that the tapped row's identity has landed on Detail | Detail's identity band on first mount | Disabled — no slide, no fade, static layout |
 | **timeline entrance** | Communicate temporal ordering when the detail first mounts | Detail's `ActivityLifecycleTimeline` | All items render at once, no fade, no stagger |
 | **progressive reveal** | Expand technical detail without a page jump | Detail's "Show technical detail" toggle | `animateContentSize` disabled — content appears or disappears instantly |
+
+**Why not `SharedTransitionLayout`.** A Compose-native shared-element transition on the state color rule between History and Detail was evaluated. It would need `@OptIn(ExperimentalSharedTransitionApi::class)` wrapping the entire `HuaweiSyncNavigationShell` and would have to survive the `when` on `HuaweiSyncScreenDestination`. Cycle 2 chooses the smaller, purely-local motion below because (a) the wiring risk is disproportionate to the visual gain, (b) both surfaces already paint the same state color in the same shape so the identity *is* preserved visually without traveling, and (c) the shared-element APIs still print stability warnings against our BOM. If a future cycle re-attempts it, the shape of the motion is documented in `cycle-01-motion-spec.md § 4.4` and the identity-band pill is the intended shared element.
 
 Cross-cutting rules that hold across all three:
 
@@ -28,19 +30,19 @@ Reuse `HuaweiSyncMotionPolicy` tokens as they are. No new companion fields are a
 
 | Purpose | Token | Value (Standard) | Value (Reduced) |
 |---|---|---|---|
-| Shared-element enter/exit | `standardMillis` | 240 ms | 0 ms (disabled) |
+| Identity arrival (`fadeIn + slideInVertically`) | `standardMillis` | 240 ms | 0 ms (disabled) |
 | Timeline item entrance | `standardMillis` for total window; per-item offset `fastMillis / 2` | 240 ms window, ~80 ms stagger between items | 0 ms — all items composed static |
 | Technical detail `animateContentSize` | `standardMillis` | 240 ms | 0 ms (instant) |
 
 ## 3. Per-family motion detail
 
-### 3.1 Shared identity — list-to-detail
+### 3.1 Identity arrival
 
-- The shared element is the **leading 4 dp state color rule** on the History row and the **compact readback pill** on the Detail identity band.
-- Compose API: `SharedTransitionLayout` at the `HuaweiSyncNavigationShell` boundary, with `Modifier.sharedElement(key = "activity-identity-${clientRecordId}")` on both the row rule + pill and the Detail pill. Distinct keys per workout so a wrong-key drop-in never blends unrelated activities.
-- Enter transition: `fadeIn(tween(policy.standardMillis))`; exit: `fadeOut(tween(policy.fastMillis))`. No scale, no translation beyond the natural bounds change.
-- Only the state color and pill participate in the shared element. The bulk of the Detail surface (rail, timeline, disclaimer, technical toggle) enters through Compose's default composition, not through the shared element.
-- **Reduced motion:** `SharedTransitionLayout` is not composed. Both surfaces render their static layout; back navigation still works. The row rule and the Detail pill still visually match (same color, same shape) — the only difference is the identity does not *travel*, it just *is*.
+- On the first composition of `ActivityDetailScreen` (for a non-null activity), the identity band mounts with `AnimatedVisibility(visibleState = remember { MutableTransitionState(false) }.apply { targetState = true })`.
+- Enter transition: `fadeIn(tween(policy.standardMillis)) + slideInVertically(tween(policy.standardMillis)) { it / 4 }`. The slide is small (~1/4 of the band's height) so the header never appears from off-screen.
+- Exit transition on back is Compose's default (no explicit exit spec).
+- The identity band is the only element in this family. The rail, timeline, disclaimer, and technical toggle enter through Compose's default composition.
+- **Reduced motion:** `AnimatedVisibility` is not composed; the identity band renders in its final position at frame zero. The row's state color rule and the Detail pill still visually match — the identity does not *arrive*, it *is*.
 
 ### 3.2 Timeline entrance
 
