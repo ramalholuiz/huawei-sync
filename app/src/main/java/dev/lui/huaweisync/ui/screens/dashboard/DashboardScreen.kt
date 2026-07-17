@@ -34,7 +34,10 @@ import dev.lui.huaweisync.ui.components.StatusLabel
 import dev.lui.huaweisync.ui.components.StraightEdgeButton
 import dev.lui.huaweisync.ui.components.SyncFab
 import dev.lui.huaweisync.ui.components.SyncFabState
+import dev.lui.huaweisync.ui.components.SyncPipelineRail
+import dev.lui.huaweisync.ui.components.SyncRailOrientation
 import dev.lui.huaweisync.ui.components.TechnicalMicrocopy
+import dev.lui.huaweisync.ui.screens.pipeline.PipelinePresentation
 import dev.lui.huaweisync.ui.state.ProductGymRatsStatus
 import dev.lui.huaweisync.ui.state.ProductHealthConnectStatus
 import dev.lui.huaweisync.ui.state.ProductSyncPhase
@@ -174,6 +177,7 @@ private fun DashboardContent(sync: ProductSyncState, onResolveHealthConnect: () 
 @Composable
 private fun SyncHero(sync: ProductSyncState, onResolveHealthConnect: () -> Unit) {
     val visualStatus = sync.healthConnectStatus.toModernistStatus()
+    val presentation = PipelinePresentation.from(sync, coordinatorBusy = sync.phase != ProductSyncPhase.IDLE)
     ModernistSurface(
         modifier = Modifier.fillMaxWidth().testTag("dashboard-sync-hero"),
         backgroundColor = HuaweiSyncTheme.colors.surface2,
@@ -192,6 +196,11 @@ private fun SyncHero(sync: ProductSyncState, onResolveHealthConnect: () -> Unit)
             StatusLabel(visualStatus)
             TechnicalMicrocopy(sync.phase.displayLabel())
         }
+        Spacer(Modifier.height(HuaweiSyncSpacing.lg))
+        SyncPipelineRail(
+            model = presentation.rail,
+            orientation = SyncRailOrientation.HORIZONTAL,
+        )
         Spacer(Modifier.height(HuaweiSyncSpacing.lg))
         Text(
             text = sync.healthConnectStatus.label,
@@ -213,11 +222,11 @@ private fun SyncHero(sync: ProductSyncState, onResolveHealthConnect: () -> Unit)
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-        if (sync.phase != ProductSyncPhase.IDLE) {
+        if (sync.phase != ProductSyncPhase.IDLE && presentation.phaseIndex != null) {
             Spacer(Modifier.height(HuaweiSyncSpacing.lg))
             ModernistProgress(
                 progress = sync.phase.progressFraction(),
-                label = "Sync phase: ${sync.phase.displayLabel()}",
+                label = "Phase ${presentation.phaseIndex} of ${presentation.phaseTotal} — ${sync.phase.displayLabel()}",
             )
         }
     }

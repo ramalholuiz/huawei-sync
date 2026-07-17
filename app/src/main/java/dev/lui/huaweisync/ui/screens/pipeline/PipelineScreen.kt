@@ -10,13 +10,13 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -135,7 +135,10 @@ private fun PipelinePhaseCard(
     motion: HuaweiSyncMotionPolicy,
 ) {
     ModernistSurface(modifier = Modifier.fillMaxWidth().testTag("pipeline-phases")) {
-        TechnicalMicrocopy("COORDINATOR PHASE EVIDENCE")
+        val phaseCounterLabel = presentation.phaseIndex?.let { index ->
+            "COORDINATOR PHASE $index OF ${presentation.phaseTotal}"
+        } ?: "COORDINATOR PHASE EVIDENCE"
+        TechnicalMicrocopy(phaseCounterLabel)
         EvidenceTransition(
             value = presentation.statusLabel,
             motion = motion,
@@ -224,7 +227,7 @@ private fun PipelineStepGlyph(
         modifier = Modifier
             .size(32.dp)
             .border(HuaweiSyncGeometry.borderThin, tone)
-            .drawBehind { drawRect(tone.copy(alpha = 0.12f)) },
+            .drawBehind { drawStateShape(state, tone) },
         contentAlignment = Alignment.Center,
     ) {
         EvidenceTransition(value = state, motion = motion) { visibleState ->
@@ -239,6 +242,36 @@ private fun PipelineStepGlyph(
                 contentDescription = visibleState.name.replace('_', ' ').lowercase(),
                 tint = tone,
                 modifier = Modifier.size(18.dp).graphicsLayer(rotationZ = rotation),
+            )
+        }
+    }
+}
+
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawStateShape(
+    state: PipelineStepState,
+    tone: Color,
+) {
+    when (state) {
+        PipelineStepState.COMPLETE -> drawRect(tone.copy(alpha = 0.22f))
+        PipelineStepState.PENDING -> drawRect(tone.copy(alpha = 0.06f))
+        PipelineStepState.ACTIVE -> drawRect(
+            color = tone.copy(alpha = 0.22f),
+            size = androidx.compose.ui.geometry.Size(size.width / 2f, size.height),
+        )
+        PipelineStepState.NEEDS_ATTENTION -> {
+            drawRect(tone.copy(alpha = 0.10f))
+            val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = 2f)
+            drawLine(
+                color = tone.copy(alpha = 0.55f),
+                start = androidx.compose.ui.geometry.Offset(0f, 0f),
+                end = androidx.compose.ui.geometry.Offset(size.width, size.height),
+                strokeWidth = stroke.width,
+            )
+            drawLine(
+                color = tone.copy(alpha = 0.55f),
+                start = androidx.compose.ui.geometry.Offset(size.width, 0f),
+                end = androidx.compose.ui.geometry.Offset(0f, size.height),
+                strokeWidth = stroke.width,
             )
         }
     }

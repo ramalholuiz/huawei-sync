@@ -91,14 +91,16 @@ Existing `sync-modal-status`, `sync-modal-explanation`, `sync-modal-phase-checks
 
 ## 6. Pipeline screen refinement
 
-- Add the vertical `SyncPipelineRail` at the top of `PipelinePhaseCard`, above the per-step list, so the four endpoints are always visible.
-- Per-step glyph shape encoding (drawn on `Canvas`):
+The `SyncPipelineRail` is **not** repeated on `PipelineScreen`. That screen already lists five per-step rows that read as the pipeline; adding the rail would duplicate the same object in the same viewport and (measured with Robolectric at `w411dp-h891dp`) pushes the Health Connect endpoint card below the fold, breaking one existing regression test. Direction B still applies here through:
+
+- Per-step glyph shape encoding (drawn on `Canvas`, backing the existing icon):
   - `COMPLETE` — filled square.
-  - `PENDING` — hollow square.
-  - `ACTIVE` — half-filled square (left / top half filled).
+  - `PENDING` — faint hollow square.
+  - `ACTIVE` — half-filled square (left half filled).
   - `NEEDS_ATTENTION` — hollow square with a diagonal cross.
-- Existing `pipeline-step-*` test tags stay. The current `EvidenceTransition` on the glyph is preserved (it becomes a crossfade between shape targets).
-- The reduced-motion branch already exists in `PipelineStepGlyph` — extend to skip the shape crossfade.
+- Phase counter microcopy: `PhaseCard`'s header changes from `COORDINATOR PHASE EVIDENCE` to `COORDINATOR PHASE i OF 5` when a phase is known, falling back to `COORDINATOR PHASE EVIDENCE` while awaiting evidence.
+- Existing `pipeline-step-*` and `pipeline-status` test tags stay. The existing `EvidenceTransition` on the glyph is preserved.
+- The reduced-motion branch already exists in `PipelineStepGlyph` — no change.
 
 ## 7. Non-motion decisions bundled with this spec
 

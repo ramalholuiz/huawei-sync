@@ -1,34 +1,28 @@
 package dev.lui.huaweisync.ui.screens.sync
 
 import android.content.res.Configuration
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Sync
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
@@ -39,11 +33,14 @@ import dev.lui.huaweisync.ui.components.HuaweiSyncMotionProvider
 import dev.lui.huaweisync.ui.components.ModernistSurface
 import dev.lui.huaweisync.ui.components.SectionHeader
 import dev.lui.huaweisync.ui.components.StraightEdgeButton
+import dev.lui.huaweisync.ui.components.SyncPipelineRail
+import dev.lui.huaweisync.ui.components.SyncRailOrientation
 import dev.lui.huaweisync.ui.components.TechnicalMicrocopy
 import dev.lui.huaweisync.ui.screens.pipeline.EvidenceTransition
 import dev.lui.huaweisync.ui.screens.pipeline.PipelinePresentation
 import dev.lui.huaweisync.ui.screens.pipeline.PipelineStepState
 import dev.lui.huaweisync.ui.screens.pipeline.previewPipelineState
+import dev.lui.huaweisync.ui.state.ProductSyncPhase
 import dev.lui.huaweisync.ui.state.ProductSyncState
 import dev.lui.huaweisync.ui.theme.HuaweiSyncGeometry
 import dev.lui.huaweisync.ui.theme.HuaweiSyncSpacing
@@ -72,9 +69,18 @@ fun SyncNowModal(
                 title = "Sync now",
                 eyebrow = surfaceLabel ?: if (coordinatorBusy) "SYNC IN PROGRESS" else "SYNC STATUS",
             )
-            PhaseSignal(
-                active = presentation?.motion?.active == true,
-                confirmed = state?.verification?.realReadbackConfirmed == true,
+            if (presentation != null) {
+                SyncPipelineRail(
+                    model = presentation.rail,
+                    orientation = SyncRailOrientation.HORIZONTAL,
+                    nodeSize = 40.dp,
+                )
+                Spacer(Modifier.height(HuaweiSyncSpacing.md))
+            }
+            PhaseMedallion(
+                presentation = presentation,
+                awaitingEvidence = presentation?.awaitingCoordinatorEvidence == true,
+                state = state,
             )
             Spacer(Modifier.height(HuaweiSyncSpacing.md))
             EvidenceTransition(
@@ -92,11 +98,6 @@ fun SyncNowModal(
                 color = HuaweiSyncTheme.colors.ink2,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.testTag("sync-modal-explanation"),
-            )
-            Spacer(Modifier.height(HuaweiSyncSpacing.md))
-            EndpointStrip(
-                healthConnectLabel = presentation?.healthConnectLabel ?: "Evidence unavailable",
-                destinationLabel = presentation?.destinationLabel ?: "Ready state unavailable",
             )
             presentation?.let {
                 Spacer(Modifier.height(HuaweiSyncSpacing.lg))
@@ -133,26 +134,27 @@ fun SyncNowModal(
 }
 
 @Composable
-private fun PhaseSignal(active: Boolean, confirmed: Boolean) {
+private fun PhaseMedallion(
+    presentation: PipelinePresentation?,
+    awaitingEvidence: Boolean,
+    state: ProductSyncState?,
+) {
     val motion = HuaweiSyncMotion.current
-    val rotation = if (active && !motion.reducedMotion) {
-        val transition = rememberInfiniteTransition(label = "sync-phase-signal")
-        val value by transition.animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec = infiniteRepeatable(
-                tween(motion.syncRotationMillis, easing = LinearEasing),
-            ),
-            label = "sync-phase-rotation",
-        )
-        value
-    } else {
-        0f
-    }
-    val color = when {
+    val confirmed = state?.verification?.realReadbackConfirmed == true
+    val tone: Color = when {
         confirmed -> HuaweiSyncTheme.colors.ok
-        active -> HuaweiSyncTheme.colors.accentForeground
+        presentation?.motion?.active == true -> HuaweiSyncTheme.colors.accentForeground
+        awaitingEvidence -> HuaweiSyncTheme.colors.ink2
         else -> HuaweiSyncTheme.colors.ink2
+    }
+    val letter = phaseLetter(state?.phase)
+    val active = presentation?.motion?.active == true
+    val talkback = when {
+        confirmed -> "Readback confirmed"
+        active && motion.reducedMotion ->
+            "Coordinator phase active, static reduced-motion indicator"
+        active -> "Coordinator phase active"
+        else -> "No active coordinator phase observed"
     }
 
     Box(
@@ -160,60 +162,45 @@ private fun PhaseSignal(active: Boolean, confirmed: Boolean) {
             .fillMaxWidth()
             .height(112.dp)
             .border(HuaweiSyncGeometry.borderThin, HuaweiSyncTheme.colors.lineStrong)
-            .background(HuaweiSyncTheme.colors.surface2),
+            .background(HuaweiSyncTheme.colors.surface2)
+            .semantics { contentDescription = talkback },
         contentAlignment = Alignment.Center,
     ) {
         Box(
             modifier = Modifier
                 .size(72.dp)
-                .border(HuaweiSyncGeometry.borderThin, color)
-                .graphicsLayer(rotationZ = rotation),
+                .border(HuaweiSyncGeometry.borderThin, tone),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector = if (confirmed) Icons.Rounded.Check else Icons.Rounded.Sync,
-                contentDescription = when {
-                    confirmed -> "Readback confirmed"
-                    active && motion.reducedMotion -> "Coordinator phase active, static reduced-motion indicator"
-                    active -> "Coordinator phase active"
-                    else -> "No active coordinator phase observed"
+            AnimatedContent(
+                targetState = letter,
+                transitionSpec = {
+                    if (motion.reducedMotion) {
+                        fadeIn(tween(0)) togetherWith fadeOut(tween(0))
+                    } else {
+                        fadeIn(tween(motion.standardMillis)) togetherWith
+                            fadeOut(tween(motion.fastMillis))
+                    }
                 },
-                tint = color,
-                modifier = Modifier.size(32.dp),
-            )
+                label = "sync-modal-phase-medallion",
+            ) { visibleLetter ->
+                Text(
+                    text = visibleLetter,
+                    color = tone,
+                    style = MaterialTheme.typography.displaySmall,
+                )
+            }
         }
     }
 }
 
-@Composable
-private fun EndpointStrip(healthConnectLabel: String, destinationLabel: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(HuaweiSyncSpacing.sm),
-    ) {
-        Endpoint("G1", "Synthetic source", Modifier.weight(1f))
-        Endpoint("HC", healthConnectLabel, Modifier.weight(1f))
-        Endpoint("G", destinationLabel, Modifier.weight(1f))
-    }
-}
-
-@Composable
-private fun Endpoint(code: String, detail: String, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .border(HuaweiSyncGeometry.borderThin, HuaweiSyncTheme.colors.line)
-            .padding(HuaweiSyncSpacing.sm),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(HuaweiSyncSpacing.xs),
-    ) {
-        Text(code, style = MaterialTheme.typography.titleMedium)
-        Text(
-            text = detail,
-            color = HuaweiSyncTheme.colors.ink2,
-            style = HuaweiSyncTheme.technicalTypography.microcopy,
-            maxLines = 3,
-        )
-    }
+private fun phaseLetter(phase: ProductSyncPhase?): String = when (phase) {
+    ProductSyncPhase.PREFLIGHT -> "P"
+    ProductSyncPhase.WRITE -> "W"
+    ProductSyncPhase.ACCEPTANCE -> "A"
+    ProductSyncPhase.VERIFICATION -> "V"
+    ProductSyncPhase.RECONCILIATION -> "R"
+    ProductSyncPhase.IDLE, null -> "·"
 }
 
 private fun modalExplanation(

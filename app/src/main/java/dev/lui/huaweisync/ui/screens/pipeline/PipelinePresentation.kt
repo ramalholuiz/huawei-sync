@@ -2,6 +2,10 @@ package dev.lui.huaweisync.ui.screens.pipeline
 
 import androidx.compose.runtime.Immutable
 import dev.lui.huaweisync.ui.components.HuaweiSyncMotionPolicy
+import dev.lui.huaweisync.ui.components.SyncPipelineRailModel
+import dev.lui.huaweisync.ui.components.SyncRailFlow
+import dev.lui.huaweisync.ui.components.SyncRailNode
+import dev.lui.huaweisync.ui.components.SyncRailState
 import dev.lui.huaweisync.ui.state.ProductHealthConnectStatus
 import dev.lui.huaweisync.ui.state.ProductSyncPhase
 import dev.lui.huaweisync.ui.state.ProductSyncState
@@ -57,6 +61,11 @@ data class PipelinePresentation(
     val awaitingCoordinatorEvidence: Boolean,
     val safeFailureSummary: String?,
     val motion: PipelineMotion,
+    val rail: SyncPipelineRailModel,
+    /** Phase index (1-based) of the current coordinator phase, or null when idle/awaiting evidence. */
+    val phaseIndex: Int?,
+    /** Total distinct product phases represented on the rail. */
+    val phaseTotal: Int,
     /** Deliberately absent: the coordinator exposes phases, not quantitative completion. */
     val numericProgress: Int? = null,
 ) {
@@ -87,6 +96,17 @@ data class PipelinePresentation(
                 )
             }
             val active = steps.any { it.state == PipelineStepState.ACTIVE }
+            val rail = buildRailModel(
+                state = state,
+                coordinatorBusy = coordinatorBusy,
+                awaitingEvidence = awaitingEvidence,
+            )
+            val phaseTotal = PipelineStep.entries.size
+            val phaseIndex = when {
+                awaitingEvidence -> null
+                state.phase == ProductSyncPhase.IDLE -> null
+                else -> currentStep?.ordinal?.plus(1)
+            }
 
             return PipelinePresentation(
                 statusLabel = when {
@@ -102,9 +122,111 @@ data class PipelinePresentation(
                 awaitingCoordinatorEvidence = awaitingEvidence,
                 safeFailureSummary = state.sanitizedFailureSummary,
                 motion = PipelineMotion(active),
+                rail = rail,
+                phaseIndex = phaseIndex,
+                phaseTotal = phaseTotal,
+            )
+        }
+
+        private fun buildRailModel(
+            state: ProductSyncState,
+            coordinatorBusy: Boolean,
+            awaitingEvidence: Boolean,
+        ): SyncPipelineRailModel {
+            val hcState = state.healthConnectStatus
+            val phase = state.phase
+            val confirmed = hcState == ProductHealthConnectStatus.CONFIRMED_IN_HEALTH_CONNECT
+            val attention = hcState.requiresAttention()
+
+            val huaweiState = SyncRailState.PENDING
+            val syncState = when {
+                attention -> SyncRailState.ATTENTION
+                phase == ProductSyncPhase.PREFLIGHT && coordinatorBusy -> SyncRailState.ACTIVE_WRITE
+                phase != ProductSyncPhase.IDLE || coordinatorBusy -> SyncRailState.ACTIVE_WRITE
+                else -> SyncRailState.WAITING
+            }
+            val hcNodeState = when {
+                attention -> SyncRailState.ATTENTION
+                confirmed -> SyncRailState.CONFIRMED
+                phase == ProductSyncPhase.VERIFICATION ||
+                    hcState == ProductHealthConnectStatus.ACCEPTED_AWAITING_READBACK -> SyncRailState.ACTIVE_VERIFY
+                phase == ProductSyncPhase.WRITE ||
+                    phase == ProductSyncPhase.ACCEPTANCE ||
+                    hcState == ProductHealthConnectStatus.WRITE_IN_PROGRESS -> SyncRailState.ACTIVE_WRITE
+                coordinatorBusy -> SyncRailState.ACTIVE_WRITE
+                else -> SyncRailState.WAITING
+            }
+            val gymRatsState = when {
+                attention -> SyncRailState.PENDING
+                confirmed -> SyncRailState.PENDING
+                else -> SyncRailState.PENDING
+            }
+
+            val flow = when {
+                awaitingEvidence -> SyncRailFlow.NONE
+                hcNodeState == SyncRailState.ACTIVE_WRITE -> SyncRailFlow.FORWARD
+                hcNodeState == SyncRailState.ACTIVE_VERIFY -> SyncRailFlow.REVERSE
+                else -> SyncRailFlow.NONE
+            }
+            val activeNodeIndex = when {
+                awaitingEvidence -> null
+                hcNodeState == SyncRailState.ACTIVE_WRITE ||
+                    hcNodeState == SyncRailState.ACTIVE_VERIFY -> HC_NODE_INDEX
+                syncState == SyncRailState.ACTIVE_WRITE -> SYNC_NODE_INDEX
+                else -> null
+            }
+
+            val nodes = listOf(
+                SyncRailNode(
+                    id = "huawei",
+                    monogram = "H",
+                    label = "HUAWEI",
+                    state = huaweiState,
+                    supportingText = "SOURCE",
+                ),
+                SyncRailNode(
+                    id = "sync",
+                    monogram = "S",
+                    label = "SYNC",
+                    state = syncState,
+                    supportingText = "COORDINATOR",
+                ),
+                SyncRailNode(
+                    id = "hc",
+                    monogram = "HC",
+                    label = "HEALTH",
+                    state = hcNodeState,
+                    supportingText = hcNodeState.railSupport(),
+                    confirmedAcknowledgement = confirmed,
+                ),
+                SyncRailNode(
+                    id = "gymrats",
+                    monogram = "G",
+                    label = "GYMRATS",
+                    state = gymRatsState,
+                    supportingText = "AWAITING GATE 2",
+                ),
+            )
+
+            return SyncPipelineRailModel(
+                nodes = nodes,
+                activeNodeIndex = activeNodeIndex,
+                activeFlow = flow,
             )
         }
     }
+}
+
+private const val SYNC_NODE_INDEX = 1
+private const val HC_NODE_INDEX = 2
+
+private fun SyncRailState.railSupport(): String = when (this) {
+    SyncRailState.WAITING -> "WAITING"
+    SyncRailState.PENDING -> "PENDING"
+    SyncRailState.ACTIVE_WRITE -> "WRITING"
+    SyncRailState.ACTIVE_VERIFY -> "VERIFYING"
+    SyncRailState.CONFIRMED -> "CONFIRMED"
+    SyncRailState.ATTENTION -> "ATTENTION"
 }
 
 private val PipelineStep.label: String
