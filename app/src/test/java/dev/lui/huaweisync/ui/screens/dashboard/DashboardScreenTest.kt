@@ -17,6 +17,7 @@ import dev.lui.huaweisync.ui.state.ProductSyncPhase
 import dev.lui.huaweisync.ui.state.ProductSyncState
 import dev.lui.huaweisync.ui.state.ProductVerificationEvidence
 import dev.lui.huaweisync.ui.theme.HuaweiSyncTheme
+import dev.lui.huaweisync.ui.theme.HuaweiSyncThemeOption
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -33,8 +34,8 @@ class DashboardScreenTest {
     @Test
     fun `loading presents fact sources and disables sync`() {
         compose.setContent {
-            HuaweiSyncTheme(darkTheme = true) {
-                DashboardScreen(DashboardScreenState.Loading, true, {}, {}, {})
+            HuaweiSyncTheme(themeOption = HuaweiSyncThemeOption.SageDark) {
+                DashboardScreen(DashboardScreenState.Loading, HuaweiSyncThemeOption.SageDark, {}, {}, {})
             }
         }
 
@@ -202,10 +203,10 @@ class DashboardScreenTest {
         onTheme: () -> Unit = {},
     ) {
         compose.setContent {
-            HuaweiSyncTheme(darkTheme = true) {
+            HuaweiSyncTheme(themeOption = HuaweiSyncThemeOption.SageDark) {
                 DashboardScreen(
                     state = state,
-                    darkTheme = true,
+                    themeOption = HuaweiSyncThemeOption.SageDark,
                     onToggleTheme = onTheme,
                     onSync = onSync,
                     onResolveHealthConnect = onResolve,

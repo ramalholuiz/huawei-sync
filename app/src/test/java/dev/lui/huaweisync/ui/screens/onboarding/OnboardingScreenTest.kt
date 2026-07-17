@@ -9,6 +9,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
 import dev.lui.huaweisync.ui.state.ProductHealthConnectStatus
 import dev.lui.huaweisync.ui.theme.HuaweiSyncTheme
+import dev.lui.huaweisync.ui.theme.HuaweiSyncThemeOption
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -25,10 +26,10 @@ class OnboardingScreenTest {
     @Test
     fun `shows live Health Connect permission status without delivery claims`() {
         compose.setContent {
-            HuaweiSyncTheme(darkTheme = true) {
+            HuaweiSyncTheme(themeOption = HuaweiSyncThemeOption.SageDark) {
                 OnboardingScreen(
                     state = OnboardingScreenState(ProductHealthConnectStatus.PERMISSION_REQUIRED),
-                    darkTheme = true,
+                    themeOption = HuaweiSyncThemeOption.SageDark,
                     onStartSetup = {},
                     onContinueExistingSetup = {},
                     onToggleTheme = {},
@@ -44,10 +45,10 @@ class OnboardingScreenTest {
     @Test
     fun `header does not claim invented step counters`() {
         compose.setContent {
-            HuaweiSyncTheme(darkTheme = false) {
+            HuaweiSyncTheme(themeOption = HuaweiSyncThemeOption.SageLight) {
                 OnboardingScreen(
                     state = OnboardingScreenState(),
-                    darkTheme = false,
+                    themeOption = HuaweiSyncThemeOption.SageLight,
                     onStartSetup = {},
                     onContinueExistingSetup = {},
                     onToggleTheme = {},
@@ -65,10 +66,10 @@ class OnboardingScreenTest {
         var continueClicks = 0
         var themeClicks = 0
         compose.setContent {
-            HuaweiSyncTheme(darkTheme = false) {
+            HuaweiSyncTheme(themeOption = HuaweiSyncThemeOption.SageLight) {
                 OnboardingScreen(
                     state = OnboardingScreenState(),
-                    darkTheme = false,
+                    themeOption = HuaweiSyncThemeOption.SageLight,
                     onStartSetup = { setupClicks++ },
                     onContinueExistingSetup = { continueClicks++ },
                     onToggleTheme = { themeClicks++ },

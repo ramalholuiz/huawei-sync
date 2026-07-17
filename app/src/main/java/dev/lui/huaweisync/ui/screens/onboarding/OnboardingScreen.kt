@@ -42,6 +42,7 @@ import dev.lui.huaweisync.ui.state.ProductHealthConnectStatus
 import dev.lui.huaweisync.ui.theme.HuaweiSyncGeometry
 import dev.lui.huaweisync.ui.theme.HuaweiSyncSpacing
 import dev.lui.huaweisync.ui.theme.HuaweiSyncTheme
+import dev.lui.huaweisync.ui.theme.HuaweiSyncThemeOption
 
 @Immutable
 data class OnboardingScreenState(
@@ -51,7 +52,7 @@ data class OnboardingScreenState(
 @Composable
 fun OnboardingScreen(
     state: OnboardingScreenState,
-    darkTheme: Boolean,
+    themeOption: HuaweiSyncThemeOption,
     onStartSetup: () -> Unit,
     onContinueExistingSetup: () -> Unit,
     onToggleTheme: () -> Unit,
@@ -65,7 +66,7 @@ fun OnboardingScreen(
             .padding(horizontal = HuaweiSyncSpacing.xl, vertical = HuaweiSyncSpacing.lg),
         verticalArrangement = Arrangement.spacedBy(HuaweiSyncSpacing.xl),
     ) {
-        OnboardingHeader(darkTheme = darkTheme, onToggleTheme = onToggleTheme)
+        OnboardingHeader(themeOption = themeOption, onToggleTheme = onToggleTheme)
         ConnectionOrbit()
         Column(verticalArrangement = Arrangement.spacedBy(HuaweiSyncSpacing.md)) {
             TechnicalMicrocopy("FOR HUAWEI WATCH OWNERS")
@@ -106,7 +107,7 @@ fun OnboardingScreen(
 }
 
 @Composable
-private fun OnboardingHeader(darkTheme: Boolean, onToggleTheme: () -> Unit) {
+private fun OnboardingHeader(themeOption: HuaweiSyncThemeOption, onToggleTheme: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -130,7 +131,7 @@ private fun OnboardingHeader(darkTheme: Boolean, onToggleTheme: () -> Unit) {
             }
         }
         StraightEdgeButton(
-            label = if (darkTheme) "Light" else "Dark",
+            label = themeOption.next().label,
             onClick = onToggleTheme,
             modifier = Modifier.semantics { contentDescription = "Switch theme" },
         )
@@ -214,18 +215,18 @@ private fun AvailabilityStrip(status: ProductHealthConnectStatus?) {
 @dev.lui.huaweisync.ui.preview.HuaweiSyncScreenshotPreviews
 @Composable
 private fun OnboardingLoadingPreview() {
-    HuaweiSyncTheme(darkTheme = true) {
-        OnboardingScreen(OnboardingScreenState(), true, {}, {}, {})
+    HuaweiSyncTheme(themeOption = HuaweiSyncThemeOption.SageDark) {
+        OnboardingScreen(OnboardingScreenState(), HuaweiSyncThemeOption.SageDark, {}, {}, {})
     }
 }
 
 @Preview(name = "Onboarding blocked", uiMode = Configuration.UI_MODE_NIGHT_NO, showBackground = true)
 @Composable
 private fun OnboardingBlockedPreview() {
-    HuaweiSyncTheme(darkTheme = false) {
+    HuaweiSyncTheme(themeOption = HuaweiSyncThemeOption.SageLight) {
         OnboardingScreen(
             state = OnboardingScreenState(ProductHealthConnectStatus.PERMISSION_REQUIRED),
-            darkTheme = false,
+            themeOption = HuaweiSyncThemeOption.SageLight,
             onStartSetup = {},
             onContinueExistingSetup = {},
             onToggleTheme = {},

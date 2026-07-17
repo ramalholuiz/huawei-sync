@@ -54,6 +54,7 @@ import dev.lui.huaweisync.ui.state.ProductVerificationEvidence
 import dev.lui.huaweisync.ui.theme.HuaweiSyncGeometry
 import dev.lui.huaweisync.ui.theme.HuaweiSyncSpacing
 import dev.lui.huaweisync.ui.theme.HuaweiSyncTheme
+import dev.lui.huaweisync.ui.theme.HuaweiSyncThemeOption
 
 @Immutable
 sealed interface DashboardScreenState {
@@ -64,7 +65,7 @@ sealed interface DashboardScreenState {
 @Composable
 fun DashboardScreen(
     state: DashboardScreenState,
-    darkTheme: Boolean,
+    themeOption: HuaweiSyncThemeOption,
     onToggleTheme: () -> Unit,
     onSync: () -> Unit,
     onResolveHealthConnect: () -> Unit,
@@ -82,7 +83,7 @@ fun DashboardScreen(
             .background(HuaweiSyncTheme.colors.background),
     ) {
         DashboardTopBar(
-            darkTheme = darkTheme,
+            themeOption = themeOption,
             onToggleTheme = onToggleTheme,
             onLongPressLogo = if (BuildConfig.DEBUG) {
                 { showPrototypeGallery = true }
@@ -115,7 +116,7 @@ fun DashboardScreen(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun DashboardTopBar(
-    darkTheme: Boolean,
+    themeOption: HuaweiSyncThemeOption,
     onToggleTheme: () -> Unit,
     onLongPressLogo: (() -> Unit)? = null,
 ) {
@@ -157,7 +158,7 @@ private fun DashboardTopBar(
             }
         }
         StraightEdgeButton(
-            label = if (darkTheme) "Light" else "Dark",
+            label = themeOption.next().label,
             onClick = onToggleTheme,
             modifier = Modifier.semantics { contentDescription = "Switch theme" },
         )
@@ -483,10 +484,10 @@ private fun previewState(
 @Preview(name = "Dashboard loading", showBackground = true)
 @Composable
 private fun DashboardLoadingPreview() {
-    HuaweiSyncTheme(darkTheme = true) {
+    HuaweiSyncTheme(themeOption = HuaweiSyncThemeOption.SageDark) {
         DashboardScreen(
             state = DashboardScreenState.Loading,
-            darkTheme = true,
+            themeOption = HuaweiSyncThemeOption.SageDark,
             onToggleTheme = {},
             onSync = {},
             onResolveHealthConnect = {},
@@ -497,10 +498,10 @@ private fun DashboardLoadingPreview() {
 @Preview(name = "Dashboard empty", showBackground = true)
 @Composable
 private fun DashboardEmptyPreview() {
-    HuaweiSyncTheme(darkTheme = true) {
+    HuaweiSyncTheme(themeOption = HuaweiSyncThemeOption.SageDark) {
         DashboardScreen(
             state = DashboardScreenState.Content(previewState(ProductHealthConnectStatus.READY_TO_SYNC)),
-            darkTheme = true,
+            themeOption = HuaweiSyncThemeOption.SageDark,
             onToggleTheme = {},
             onSync = {},
             onResolveHealthConnect = {},
@@ -511,12 +512,12 @@ private fun DashboardEmptyPreview() {
 @Preview(name = "Dashboard blocked", uiMode = Configuration.UI_MODE_NIGHT_NO, showBackground = true)
 @Composable
 private fun DashboardBlockedPreview() {
-    HuaweiSyncTheme(darkTheme = false) {
+    HuaweiSyncTheme(themeOption = HuaweiSyncThemeOption.SageLight) {
         DashboardScreen(
             state = DashboardScreenState.Content(
                 previewState(ProductHealthConnectStatus.PERMISSION_REQUIRED),
             ),
-            darkTheme = false,
+            themeOption = HuaweiSyncThemeOption.SageLight,
             onToggleTheme = {},
             onSync = {},
             onResolveHealthConnect = {},
@@ -527,7 +528,7 @@ private fun DashboardBlockedPreview() {
 @Preview(name = "Dashboard error", showBackground = true)
 @Composable
 private fun DashboardErrorPreview() {
-    HuaweiSyncTheme(darkTheme = true) {
+    HuaweiSyncTheme(themeOption = HuaweiSyncThemeOption.SageDark) {
         DashboardScreen(
             state = DashboardScreenState.Content(
                 previewState(
@@ -536,7 +537,7 @@ private fun DashboardErrorPreview() {
                     failure = "Health Connect write failed. Retry after reviewing availability and permission.",
                 ),
             ),
-            darkTheme = true,
+            themeOption = HuaweiSyncThemeOption.SageDark,
             onToggleTheme = {},
             onSync = {},
             onResolveHealthConnect = {},
@@ -548,7 +549,7 @@ private fun DashboardErrorPreview() {
 @dev.lui.huaweisync.ui.preview.HuaweiSyncScreenshotPreviews
 @Composable
 private fun DashboardVerifiedPreview() {
-    HuaweiSyncTheme(darkTheme = true) {
+    HuaweiSyncTheme(themeOption = HuaweiSyncThemeOption.SageDark) {
         DashboardScreen(
             state = DashboardScreenState.Content(
                 previewState(
@@ -558,7 +559,7 @@ private fun DashboardVerifiedPreview() {
                     confirmed = true,
                 ),
             ),
-            darkTheme = true,
+            themeOption = HuaweiSyncThemeOption.SageDark,
             onToggleTheme = {},
             onSync = {},
             onResolveHealthConnect = {},

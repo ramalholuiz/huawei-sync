@@ -89,6 +89,7 @@ import dev.lui.huaweisync.ui.state.ProductSyncState
 import dev.lui.huaweisync.ui.theme.HuaweiSyncGeometry
 import dev.lui.huaweisync.ui.theme.HuaweiSyncSpacing
 import dev.lui.huaweisync.ui.theme.HuaweiSyncTheme
+import dev.lui.huaweisync.ui.theme.HuaweiSyncThemeOption
 
 internal val WideNavigationBreakpoint = 760.dp
 private const val MoreNavigationKey = "more"
@@ -113,10 +114,12 @@ fun HuaweiSyncRoot(
 ) {
     val navigationState = rememberHuaweiSyncNavigationState(initialDestination)
     val systemDarkTheme = isSystemInDarkTheme()
-    var darkTheme by rememberSaveable { mutableStateOf(systemDarkTheme) }
+    var themeOption by rememberSaveable {
+        mutableStateOf(HuaweiSyncThemeOption.sageForSystemDark(systemDarkTheme))
+    }
     var selectedActivityClientRecordId by rememberSaveable { mutableStateOf<String?>(null) }
     HuaweiSyncMotionProvider {
-        HuaweiSyncTheme(darkTheme = darkTheme) {
+        HuaweiSyncTheme(themeOption = themeOption) {
             Surface(
                 modifier = Modifier.fillMaxSize().then(modifier),
                 color = HuaweiSyncTheme.colors.background,
@@ -127,8 +130,8 @@ fun HuaweiSyncRoot(
                     historyState = historyState,
                     selectedActivityClientRecordId = selectedActivityClientRecordId,
                     syncInProgress = syncInProgress,
-                    darkTheme = darkTheme,
-                    onToggleTheme = { darkTheme = !darkTheme },
+                    themeOption = themeOption,
+                    onToggleTheme = { themeOption = themeOption.next() },
                     onHistoryRetry = onHistoryRetry,
                     onSelectActivity = { clientRecordId ->
                         selectedActivityClientRecordId = clientRecordId
@@ -150,7 +153,7 @@ internal fun HuaweiSyncNavigationShell(
     historyState: HistoryState = HistoryState.Loading,
     selectedActivityClientRecordId: String? = null,
     syncInProgress: Boolean,
-    darkTheme: Boolean,
+    themeOption: HuaweiSyncThemeOption,
     onToggleTheme: () -> Unit,
     onHistoryRetry: () -> Unit = {},
     onSelectActivity: (String) -> Unit = {},
@@ -176,7 +179,7 @@ internal fun HuaweiSyncNavigationShell(
                     historyState = historyState,
                     selectedActivityClientRecordId = selectedActivityClientRecordId,
                     syncInProgress = syncInProgress,
-                    darkTheme = darkTheme,
+                    themeOption = themeOption,
                     onToggleTheme = onToggleTheme,
                     onHistoryRetry = onHistoryRetry,
                     onSelectActivity = onSelectActivity,
@@ -204,7 +207,7 @@ internal fun HuaweiSyncNavigationShell(
                         historyState = historyState,
                         selectedActivityClientRecordId = selectedActivityClientRecordId,
                         syncInProgress = syncInProgress,
-                        darkTheme = darkTheme,
+                        themeOption = themeOption,
                         onToggleTheme = onToggleTheme,
                         onHistoryRetry = onHistoryRetry,
                         onSelectActivity = onSelectActivity,
@@ -382,7 +385,7 @@ private fun DestinationContent(
     historyState: HistoryState,
     selectedActivityClientRecordId: String?,
     syncInProgress: Boolean,
-    darkTheme: Boolean,
+    themeOption: HuaweiSyncThemeOption,
     onToggleTheme: () -> Unit,
     onHistoryRetry: () -> Unit,
     onSelectActivity: (String) -> Unit,
@@ -395,7 +398,7 @@ private fun DestinationContent(
         when (navigationState.currentDestination) {
             Onboarding -> OnboardingScreen(
                 state = OnboardingScreenState(productSyncState?.healthConnectStatus),
-                darkTheme = darkTheme,
+                themeOption = themeOption,
                 onStartSetup = {
                     onSync()
                     navigationState.navigateTo(Dashboard)
@@ -409,7 +412,7 @@ private fun DestinationContent(
             Dashboard -> DashboardScreen(
                 state = productSyncState?.let(DashboardScreenState::Content)
                     ?: DashboardScreenState.Loading,
-                darkTheme = darkTheme,
+                themeOption = themeOption,
                 onToggleTheme = onToggleTheme,
                 onSync = onSync,
                 onResolveHealthConnect = onSync,
