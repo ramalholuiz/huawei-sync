@@ -51,7 +51,6 @@ import dev.lui.huaweisync.ui.theme.HuaweiSyncSpacing
 import dev.lui.huaweisync.ui.theme.HuaweiSyncTheme
 import java.time.Instant
 import java.time.LocalDate
-import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -341,10 +340,10 @@ private fun ActivityHistoryRow(
     onSelectActivity: (String) -> Unit,
 ) {
     val color = readbackAccent(activity.readbackState)
-    val timeText = LocalTime.ofInstant(
-        Instant.ofEpochMilli(activity.updatedAtEpochMillis),
-        zone,
-    ).format(RowTimeFormatter)
+    val timeText = Instant.ofEpochMilli(activity.updatedAtEpochMillis)
+        .atZone(zone)
+        .toLocalTime()
+        .format(RowTimeFormatter)
     val label = readbackLabel(activity.readbackState)
     Row(
         modifier = Modifier
@@ -452,7 +451,11 @@ internal fun groupByDay(
     val today = LocalDate.now(zone)
     val yesterday = today.minus(1, ChronoUnit.DAYS)
     return activities
-        .groupBy { LocalDate.ofInstant(Instant.ofEpochMilli(it.updatedAtEpochMillis), zone) }
+        .groupBy {
+            Instant.ofEpochMilli(it.updatedAtEpochMillis)
+                .atZone(zone)
+                .toLocalDate()
+        }
         .toSortedMap(compareByDescending { it })
         .map { (day, dayActivities) ->
             HistoryDayGroup(
