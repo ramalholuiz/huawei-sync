@@ -204,7 +204,7 @@ data class PipelinePresentation(
                     monogram = "G",
                     label = "GYMRATS",
                     state = gymRatsState,
-                    supportingText = "AWAITING GATE 2",
+                    supportingText = "AWAITING G2",
                 ),
             )
 

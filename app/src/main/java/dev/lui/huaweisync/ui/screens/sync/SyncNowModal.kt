@@ -74,6 +74,7 @@ fun SyncNowModal(
                     model = presentation.rail,
                     orientation = SyncRailOrientation.HORIZONTAL,
                     nodeSize = 40.dp,
+                    showSupportingText = false,
                 )
                 Spacer(Modifier.height(HuaweiSyncSpacing.md))
             }

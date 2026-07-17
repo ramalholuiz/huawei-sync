@@ -144,15 +144,12 @@ private fun HorizontalRail(
         }
         Spacer(Modifier.height(HuaweiSyncSpacing.xs))
         Row(modifier = Modifier.fillMaxWidth()) {
-            model.nodes.forEachIndexed { index, node ->
+            model.nodes.forEach { node ->
                 RailLabel(
                     node = node,
-                    modifier = Modifier.width(nodeSize),
+                    modifier = Modifier.weight(1f),
                     showSupportingText = showSupportingText,
                 )
-                if (index < model.nodes.lastIndex) {
-                    Spacer(Modifier.weight(1f))
-                }
             }
         }
     }
