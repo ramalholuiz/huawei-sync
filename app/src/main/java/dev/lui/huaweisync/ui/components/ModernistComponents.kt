@@ -66,12 +66,11 @@ fun ModernistSurface(
     contentPadding: Dp = HuaweiSyncSpacing.lg,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(
-        modifier = modifier
-            .clip(RectangleShape)
-            .background(backgroundColor)
-            .border(HuaweiSyncGeometry.borderThin, borderColor, RectangleShape)
-            .padding(contentPadding),
+    // Temporary source-compatible alias while screen call sites migrate in later cycles.
+    SurfaceCard(
+        modifier = modifier,
+        containerColor = backgroundColor,
+        contentPadding = contentPadding,
         content = content,
     )
 }
@@ -89,21 +88,15 @@ fun StatusLabel(
     status: ModernistStatus,
     modifier: Modifier = Modifier,
 ) {
-    val color = when (status) {
-        ModernistStatus.Ready, ModernistStatus.Complete -> HuaweiSyncTheme.colors.ok
-        ModernistStatus.Syncing -> HuaweiSyncTheme.colors.info
-        ModernistStatus.Warning -> HuaweiSyncTheme.colors.warning
-        ModernistStatus.Error -> HuaweiSyncTheme.colors.accentForeground
+    // Temporary source-compatible alias while status call sites migrate to semantic chips.
+    val visualStatus = when (status) {
+        ModernistStatus.Ready -> VisualStatus.Ready
+        ModernistStatus.Syncing -> VisualStatus.Pending
+        ModernistStatus.Complete -> VisualStatus.Success
+        ModernistStatus.Warning -> VisualStatus.Attention
+        ModernistStatus.Error -> VisualStatus.Error
     }
-    Text(
-        text = status.label,
-        modifier = modifier
-            .border(HuaweiSyncGeometry.borderThin, color, RectangleShape)
-            .padding(horizontal = HuaweiSyncSpacing.sm, vertical = HuaweiSyncSpacing.xs)
-            .semantics { stateDescription = status.spokenState },
-        color = color,
-        style = HuaweiSyncTheme.technicalTypography.label,
-    )
+    StatusChip(label = status.spokenState, status = visualStatus, modifier = modifier)
 }
 
 @Composable
@@ -111,12 +104,8 @@ fun TechnicalMicrocopy(
     text: String,
     modifier: Modifier = Modifier,
 ) {
-    Text(
-        text = text,
-        modifier = modifier,
-        color = HuaweiSyncTheme.colors.ink2,
-        style = HuaweiSyncTheme.technicalTypography.microcopy,
-    )
+    // Temporary alias. Diagnostics may keep technical caps; product surfaces now get title styling.
+    Eyebrow(text = text, modifier = modifier)
 }
 
 @Composable
@@ -161,7 +150,7 @@ private fun SectionHeaderText(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
-        if (eyebrow != null) TechnicalMicrocopy(eyebrow.uppercase())
+        if (eyebrow != null) Eyebrow(eyebrow)
         Text(
             text = title,
             color = HuaweiSyncTheme.colors.ink,
@@ -179,27 +168,23 @@ fun StraightEdgeButton(
     accent: Boolean = false,
     leadingIcon: ImageVector? = null,
 ) {
-    val background = if (accent) HuaweiSyncTheme.colors.accentContainer else HuaweiSyncTheme.colors.surface2
-    val foreground = if (accent) Color.White else HuaweiSyncTheme.colors.ink
-    Row(
-        modifier = modifier
-            .defaultMinSize(
-                minWidth = ModernistComponentMetrics.minimumTouchTarget,
-                minHeight = ModernistComponentMetrics.minimumTouchTarget,
-            )
-            .clip(RectangleShape)
-            .background(background)
-            .border(HuaweiSyncGeometry.borderThin, HuaweiSyncTheme.colors.lineStrong, RectangleShape)
-            .clickable(enabled = enabled, role = Role.Button, onClickLabel = label, onClick = onClick)
-            .padding(horizontal = HuaweiSyncSpacing.lg, vertical = HuaweiSyncSpacing.md),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (leadingIcon != null) {
-            Icon(leadingIcon, contentDescription = null, modifier = Modifier.size(18.dp), tint = foreground)
-            Spacer(Modifier.width(HuaweiSyncSpacing.sm))
-        }
-        Text(label.uppercase(), color = foreground, style = HuaweiSyncTheme.technicalTypography.label)
+    // Temporary source-compatible alias; new code should choose PrimaryAction or SecondaryAction.
+    if (accent) {
+        PrimaryAction(
+            label = label,
+            onClick = onClick,
+            modifier = modifier,
+            enabled = enabled,
+            leadingIcon = leadingIcon,
+        )
+    } else {
+        SecondaryAction(
+            label = label,
+            onClick = onClick,
+            modifier = modifier,
+            enabled = enabled,
+            leadingIcon = leadingIcon,
+        )
     }
 }
 
