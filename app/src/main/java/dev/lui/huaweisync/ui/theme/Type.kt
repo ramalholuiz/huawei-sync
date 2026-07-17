@@ -8,8 +8,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 /**
- * Archivo is not bundled because the audited source contains no licensed local font assets.
- * Android's system sans-serif is the explicit offline fallback for all product prose.
+ * No custom font is bundled; the platform sans-serif keeps the visual foundation offline-safe.
+ * Product labels remain mixed case. Monospace technical styles are diagnostics-only.
  */
 private val ProductSans = FontFamily.SansSerif
 
@@ -27,15 +27,15 @@ val HuaweiSyncTypography = Typography(
     displayMedium = TextStyle(
         fontFamily = ProductSans,
         fontWeight = FontWeight.ExtraBold,
-        fontSize = 32.sp,
-        lineHeight = 32.sp,
+        fontSize = 36.sp,
+        lineHeight = 40.sp,
         letterSpacing = (-0.9).sp,
     ),
     displaySmall = TextStyle(
         fontFamily = ProductSans,
         fontWeight = FontWeight.ExtraBold,
-        fontSize = 30.sp,
-        lineHeight = 30.sp,
+        fontSize = 28.sp,
+        lineHeight = 32.sp,
         letterSpacing = (-0.8).sp,
     ),
     headlineLarge = TextStyle(
@@ -101,16 +101,16 @@ val HuaweiSyncTypography = Typography(
     labelLarge = TextStyle(
         fontFamily = ProductSans,
         fontWeight = FontWeight.Bold,
-        fontSize = 12.sp,
-        lineHeight = 14.sp,
-        letterSpacing = 1.2.sp,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.28.sp,
     ),
     labelMedium = TextStyle(
         fontFamily = ProductSans,
         fontWeight = FontWeight.Bold,
-        fontSize = 10.5.sp,
-        lineHeight = 12.sp,
-        letterSpacing = 1.3.sp,
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.24.sp,
     ),
     labelSmall = TextStyle(
         fontFamily = ProductSans,

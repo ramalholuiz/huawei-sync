@@ -12,11 +12,11 @@ import androidx.compose.runtime.staticCompositionLocalOf
 private val DarkMaterialColors = darkColorScheme(
     primary = DarkHuaweiSyncColors.accent,
     onPrimary = DarkHuaweiSyncColors.background,
-    primaryContainer = DarkHuaweiSyncColors.accentSoft,
+    primaryContainer = DarkHuaweiSyncColors.accentContainer,
     onPrimaryContainer = DarkHuaweiSyncColors.ink,
     secondary = DarkHuaweiSyncColors.info,
     onSecondary = DarkHuaweiSyncColors.background,
-    tertiary = DarkHuaweiSyncColors.ok,
+    tertiary = DarkHuaweiSyncColors.success,
     onTertiary = DarkHuaweiSyncColors.background,
     background = DarkHuaweiSyncColors.background,
     onBackground = DarkHuaweiSyncColors.ink,
@@ -24,7 +24,7 @@ private val DarkMaterialColors = darkColorScheme(
     onSurface = DarkHuaweiSyncColors.ink,
     surfaceVariant = DarkHuaweiSyncColors.surface2,
     onSurfaceVariant = DarkHuaweiSyncColors.ink2,
-    error = DarkHuaweiSyncColors.accent,
+    error = DarkHuaweiSyncColors.error,
     onError = DarkHuaweiSyncColors.background,
     outline = DarkHuaweiSyncColors.lineStrong,
     outlineVariant = DarkHuaweiSyncColors.line,
@@ -33,12 +33,12 @@ private val DarkMaterialColors = darkColorScheme(
 
 private val LightMaterialColors = lightColorScheme(
     primary = LightHuaweiSyncColors.accent,
-    onPrimary = LightHuaweiSyncColors.ink,
-    primaryContainer = LightHuaweiSyncColors.accentSoft,
+    onPrimary = androidx.compose.ui.graphics.Color.White,
+    primaryContainer = LightHuaweiSyncColors.accentContainer,
     onPrimaryContainer = LightHuaweiSyncColors.ink,
     secondary = LightHuaweiSyncColors.info,
     onSecondary = LightHuaweiSyncColors.ink,
-    tertiary = LightHuaweiSyncColors.ok,
+    tertiary = LightHuaweiSyncColors.success,
     onTertiary = LightHuaweiSyncColors.ink,
     background = LightHuaweiSyncColors.background,
     onBackground = LightHuaweiSyncColors.ink,
@@ -46,8 +46,8 @@ private val LightMaterialColors = lightColorScheme(
     onSurface = LightHuaweiSyncColors.ink,
     surfaceVariant = LightHuaweiSyncColors.surface2,
     onSurfaceVariant = LightHuaweiSyncColors.ink2,
-    error = LightHuaweiSyncColors.accent,
-    onError = LightHuaweiSyncColors.ink,
+    error = LightHuaweiSyncColors.error,
+    onError = androidx.compose.ui.graphics.Color.White,
     outline = LightHuaweiSyncColors.lineStrong,
     outlineVariant = LightHuaweiSyncColors.line,
     scrim = LightHuaweiSyncColors.canvasBackground,
@@ -57,7 +57,7 @@ private val LocalHuaweiSyncColors = staticCompositionLocalOf { DarkHuaweiSyncCol
 private val LocalHuaweiSyncTechnicalTypography =
     staticCompositionLocalOf { HuaweiSyncTechnicalTypography }
 
-/** Access to prototype-specific tokens that have no one-to-one Material role. */
+/** Access to app-specific semantic tokens that have no one-to-one Material role. */
 object HuaweiSyncTheme {
     val colors: HuaweiSyncColors
         @Composable
@@ -71,8 +71,8 @@ object HuaweiSyncTheme {
 }
 
 /**
- * Native dark/light theme derived exclusively from the preserved prototype token audit.
- * Dynamic color is deliberately disabled because it would replace the approved visual identity.
+ * Native dark/light theme for the approved Calm Health Companion direction.
+ * Dynamic color stays disabled because it would replace the approved semantic hue map.
  */
 @Composable
 fun HuaweiSyncTheme(

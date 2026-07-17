@@ -98,7 +98,17 @@ class AccessibilityResponsiveRegressionTest {
                     contrastRatio(palette.accentForeground, surface) >= 4.5,
                 )
             }
-            assertTrue(contrastRatio(Color.White, palette.accentContainer) >= 4.5)
+            val onAccent = if (palette === DarkHuaweiSyncColors) palette.background else Color.White
+            assertTrue(
+                "primary action contrast was ${contrastRatio(onAccent, palette.accent)}",
+                contrastRatio(onAccent, palette.accent) >= 4.5,
+            )
+            listOf(palette.success, palette.attention, palette.error, palette.info).forEach { status ->
+                assertTrue(
+                    "semantic status contrast was ${contrastRatio(status, palette.surface1)}",
+                    contrastRatio(status, palette.surface1) >= 4.5,
+                )
+            }
         }
     }
 
