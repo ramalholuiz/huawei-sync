@@ -212,7 +212,7 @@ private fun AttentionFilterChip(
     onToggle: () -> Unit,
 ) {
     val border = when {
-        !enabled -> HuaweiSyncTheme.colors.line
+        !enabled -> HuaweiSyncTheme.colors.lineStrong
         active -> HuaweiSyncTheme.colors.accentForeground
         else -> HuaweiSyncTheme.colors.lineStrong
     }
@@ -357,7 +357,7 @@ private fun ActivityHistoryRow(
     ) {
         Box(
             Modifier
-                .width(4.dp)
+                .width(6.dp)
                 .fillMaxHeight()
                 .background(color)
                 .semantics { contentDescription = "$label state marker" },

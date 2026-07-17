@@ -107,7 +107,6 @@ private fun DetailTopBar(activity: ActivityHistoryItem?, onBack: () -> Unit) {
                 tint = HuaweiSyncTheme.colors.ink,
             )
         }
-        TechnicalMicrocopy("ACTIVITY RECORD")
     }
 }
 
@@ -227,7 +226,10 @@ private fun ReadbackPill(state: ActivityReadbackState) {
 
 @Composable
 private fun SectionLabel(label: String) {
-    TechnicalMicrocopy(label)
+    Column {
+        Spacer(Modifier.height(HuaweiSyncSpacing.sm))
+        TechnicalMicrocopy(label)
+    }
 }
 
 @Composable
@@ -238,7 +240,7 @@ private fun ActivityLifecycleTimeline(
     fastMillis: Int,
 ) {
     val tones = TimelineTones(
-        neutral = HuaweiSyncTheme.colors.ink2,
+        neutral = HuaweiSyncTheme.colors.lineStrong,
         info = HuaweiSyncTheme.colors.info,
         ok = HuaweiSyncTheme.colors.ok,
         warning = HuaweiSyncTheme.colors.warning,
@@ -339,7 +341,7 @@ private fun TimelineRail(color: Color, showConnector: Boolean) {
                 Modifier
                     .width(2.dp)
                     .height(32.dp)
-                    .background(HuaweiSyncTheme.colors.lineStrong),
+                    .background(color.copy(alpha = 0.4f)),
             )
         }
     }
