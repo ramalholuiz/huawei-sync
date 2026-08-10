@@ -33,10 +33,10 @@ class HuaweiSyncNavigationTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun `prototype inventory has ten unique typed destinations`() {
-        assertEquals(10, HuaweiSyncDestination.all.size)
-        assertEquals(10, HuaweiSyncDestination.all.map { it.route }.toSet().size)
-        assertEquals(10, HuaweiSyncDestination.all.map { it.label }.toSet().size)
+    fun `active inventory has unique typed sync destinations`() {
+        assertEquals(6, HuaweiSyncDestination.all.size)
+        assertEquals(6, HuaweiSyncDestination.all.map { it.route }.toSet().size)
+        assertEquals(6, HuaweiSyncDestination.all.map { it.label }.toSet().size)
         assertSame(SyncNow, HuaweiSyncDestination.all.single { it.route == "sync-now" })
     }
 
@@ -44,12 +44,12 @@ class HuaweiSyncNavigationTest {
     fun `one state owner separates screen navigation from sync overlay`() {
         val state = HuaweiSyncNavigationState(Dashboard)
 
-        state.navigateTo(Pipeline)
-        assertSame(Pipeline, state.currentDestination)
+        state.navigateTo(Diagnostics)
+        assertSame(Diagnostics, state.currentDestination)
         assertNull(state.overlayDestination)
 
         state.showSyncOverlay()
-        assertSame(Pipeline, state.currentDestination)
+        assertSame(Diagnostics, state.currentDestination)
         assertSame(SyncNow, state.overlayDestination)
 
         state.dismissSyncOverlay()
@@ -67,13 +67,13 @@ class HuaweiSyncNavigationTest {
             )
         }
 
-        composeRule.onNodeWithContentDescription("Pipeline").performClick()
-        composeRule.onNodeWithText("Live sync pipeline").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Diagnostics").performClick()
+        composeRule.onNodeWithText("Gate 1 diagnostics content").assertIsDisplayed()
 
         composeRule.onNodeWithContentDescription("More").performClick()
         composeRule.onNodeWithTag("compact-more-menu").assertIsDisplayed()
-        composeRule.onNodeWithTag("nav-diagnostics").performClick()
-        composeRule.onNodeWithText("Gate 1 diagnostics content").assertIsDisplayed()
+        composeRule.onNodeWithTag("nav-onboarding").performClick()
+        composeRule.onNodeWithText("Your workouts, available through Health Connect.").assertIsDisplayed()
 
         composeRule.onNodeWithContentDescription("Dashboard").performClick()
         composeRule.onNodeWithText("Dashboard").assertIsDisplayed()
@@ -124,12 +124,8 @@ class HuaweiSyncNavigationTest {
         assertEquals(
             listOf(
                 Dashboard,
-                Pipeline,
-                Integrations,
                 Diagnostics,
-                Automation,
                 History,
-                AiAssistant,
             ),
             PrimaryDestinations,
         )

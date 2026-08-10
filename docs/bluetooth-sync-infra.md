@@ -1,7 +1,7 @@
 # Bluetooth sync infrastructure
 
-Status: planned.
-Implementation started: source seam, Android Bluetooth capability reader, Bluetooth preflight contract, workout summary payload parser, controlled payload source adapter, minimal Android BLE central reader, controlled loopback peripheral harness, and Android wiring for the Bluetooth coordinator.
+Status: implemented for controlled loopback; blocked for direct Huawei Watch use until a real source protocol is proven.
+Implemented: source seam, Android Bluetooth capability reader, Bluetooth preflight contract, workout summary payload parser, controlled payload source adapter, minimal Android BLE central reader, controlled loopback peripheral harness, and Android wiring for the Bluetooth coordinator.
 
 ## Purpose
 

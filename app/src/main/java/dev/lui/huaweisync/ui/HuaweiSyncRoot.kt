@@ -22,8 +22,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material3.Icon
@@ -57,34 +55,24 @@ import dev.lui.huaweisync.ui.components.SectionHeader
 import dev.lui.huaweisync.ui.components.StraightEdgeButton
 import dev.lui.huaweisync.ui.components.TechnicalMicrocopy
 import dev.lui.huaweisync.ui.navigation.ActivityDetail
-import dev.lui.huaweisync.ui.navigation.AiAssistant
-import dev.lui.huaweisync.ui.navigation.Automation
 import dev.lui.huaweisync.ui.navigation.CompactDestinations
 import dev.lui.huaweisync.ui.navigation.Dashboard
 import dev.lui.huaweisync.ui.navigation.Diagnostics
 import dev.lui.huaweisync.ui.navigation.History
 import dev.lui.huaweisync.ui.navigation.HuaweiSyncNavigationState
 import dev.lui.huaweisync.ui.navigation.HuaweiSyncScreenDestination
-import dev.lui.huaweisync.ui.navigation.Integrations
 import dev.lui.huaweisync.ui.navigation.Onboarding
-import dev.lui.huaweisync.ui.navigation.Pipeline
 import dev.lui.huaweisync.ui.navigation.PrimaryDestinations
 import dev.lui.huaweisync.ui.navigation.rememberHuaweiSyncNavigationState
-import dev.lui.huaweisync.ui.screens.assistant.AssistantScreen
-import dev.lui.huaweisync.ui.screens.automation.AutomationScreen
 import dev.lui.huaweisync.ui.screens.dashboard.DashboardScreen
 import dev.lui.huaweisync.ui.screens.dashboard.DashboardScreenState
-import dev.lui.huaweisync.ui.screens.integrations.IntegrationsScreen
 import dev.lui.huaweisync.ui.screens.onboarding.OnboardingScreen
 import dev.lui.huaweisync.ui.screens.detail.ActivityDetailScreen
 import dev.lui.huaweisync.ui.screens.history.HistoryScreen
 import dev.lui.huaweisync.ui.screens.onboarding.OnboardingScreenState
-import dev.lui.huaweisync.ui.screens.pipeline.PipelineScreen
 import dev.lui.huaweisync.ui.screens.sync.SyncNowModal
-import dev.lui.huaweisync.ui.state.AssistantLocalContext
 import dev.lui.huaweisync.ui.state.HistoryState
 import dev.lui.huaweisync.ui.state.HistoryStateMapper
-import dev.lui.huaweisync.ui.state.IntegrationState
 import dev.lui.huaweisync.ui.state.ProductSyncState
 import dev.lui.huaweisync.ui.theme.HuaweiSyncGeometry
 import dev.lui.huaweisync.ui.theme.HuaweiSyncSpacing
@@ -97,10 +85,7 @@ private const val MoreNavigationKey = "more"
 internal fun usesWidePrimaryNavigation(width: androidx.compose.ui.unit.Dp): Boolean =
     width >= WideNavigationBreakpoint
 
-/**
- * Complete prototype navigation shell. The diagnostics slot preserves the proven Gate 1 runtime
- * boundary; every other destination is explicitly labeled as unavailable or preview-only.
- */
+/** Product navigation shell focused on sync, diagnostics, and history. */
 @Composable
 fun HuaweiSyncRoot(
     modifier: Modifier = Modifier,
@@ -419,19 +404,6 @@ private fun DestinationContent(
                 syncInProgress = syncInProgress,
                 onShowSyncOverlay = onShowSyncOverlay,
             )
-            Pipeline -> productSyncState?.let { state ->
-                PipelineScreen(
-                    state = state,
-                    coordinatorBusy = syncInProgress,
-                )
-            } ?: PlaceholderDestination(
-                eyebrow = "READ-ONLY",
-                title = "Live sync pipeline",
-                message = "Loading product and coordinator evidence. No phase progress is available yet.",
-            )
-            Integrations -> IntegrationsScreen(
-                state = IntegrationState.from(productState = productSyncState),
-            )
             Diagnostics -> Column(Modifier.fillMaxSize()) {
                 SectionHeader(
                     title = "Diagnostics center",
@@ -440,7 +412,6 @@ private fun DestinationContent(
                 )
                 Box(Modifier.weight(1f)) { gate1Entry() }
             }
-            Automation -> AutomationScreen()
             History -> HistoryScreen(
                 state = historyState,
                 onRetry = onHistoryRetry,
@@ -451,49 +422,6 @@ private fun DestinationContent(
                     HistoryStateMapper.select(historyState, clientRecordId)
                 },
                 onBack = { navigationState.navigateTo(History) },
-            )
-            AiAssistant -> AssistantScreen(
-                context = AssistantLocalContext.from(productSyncState),
-            )
-        }
-    }
-}
-
-@Composable
-private fun PlaceholderDestination(
-    eyebrow: String,
-    title: String,
-    message: String,
-    primaryLabel: String? = null,
-    onPrimary: (() -> Unit)? = null,
-    secondaryLabel: String? = null,
-    onSecondary: (() -> Unit)? = null,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(HuaweiSyncSpacing.xl),
-        verticalArrangement = Arrangement.spacedBy(HuaweiSyncSpacing.lg),
-    ) {
-        SectionHeader(title = title, eyebrow = eyebrow)
-        ModernistSurface(modifier = Modifier.fillMaxWidth()) {
-            TechnicalMicrocopy("CURRENT STATUS")
-            Text(message, style = MaterialTheme.typography.bodyLarge)
-        }
-        if (primaryLabel != null && onPrimary != null) {
-            StraightEdgeButton(
-                label = primaryLabel,
-                onClick = onPrimary,
-                modifier = Modifier.fillMaxWidth(),
-                accent = title == "Dashboard",
-            )
-        }
-        if (secondaryLabel != null && onSecondary != null) {
-            StraightEdgeButton(
-                label = secondaryLabel,
-                onClick = onSecondary,
-                modifier = Modifier.fillMaxWidth(),
             )
         }
     }

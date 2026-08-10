@@ -3,7 +3,6 @@ package dev.lui.huaweisync.ui.screens.dashboard
 import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,11 +18,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,8 +26,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import dev.lui.huaweisync.BuildConfig
-import dev.lui.huaweisync.ui.prototypes.PrototypeGalleryDialog
 import dev.lui.huaweisync.ui.components.ModernistProgress
 import dev.lui.huaweisync.ui.components.ModernistStatus
 import dev.lui.huaweisync.ui.components.ModernistSurface
@@ -73,10 +65,6 @@ fun DashboardScreen(
     syncInProgress: Boolean = false,
     onShowSyncOverlay: () -> Unit = onSync,
 ) {
-    var showPrototypeGallery by remember { mutableStateOf(false) }
-    if (showPrototypeGallery && BuildConfig.DEBUG) {
-        PrototypeGalleryDialog(onDismiss = { showPrototypeGallery = false })
-    }
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -85,11 +73,6 @@ fun DashboardScreen(
         DashboardTopBar(
             themeOption = themeOption,
             onToggleTheme = onToggleTheme,
-            onLongPressLogo = if (BuildConfig.DEBUG) {
-                { showPrototypeGallery = true }
-            } else {
-                null
-            },
         )
         Box(modifier = Modifier.weight(1f)) {
             when (state) {
@@ -113,12 +96,10 @@ fun DashboardScreen(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun DashboardTopBar(
     themeOption: HuaweiSyncThemeOption,
     onToggleTheme: () -> Unit,
-    onLongPressLogo: (() -> Unit)? = null,
 ) {
     Row(
         modifier = Modifier
@@ -132,22 +113,10 @@ private fun DashboardTopBar(
             horizontalArrangement = Arrangement.spacedBy(HuaweiSyncSpacing.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            val logoModifier = if (onLongPressLogo != null) {
-                Modifier
-                    .size(36.dp)
-                    .background(HuaweiSyncTheme.colors.accentContainer)
-                    .combinedClickable(
-                        onClick = {},
-                        onLongClick = onLongPressLogo,
-                    )
-                    .testTag("dashboard-prototype-gallery-trigger")
-            } else {
-                Modifier
-                    .size(36.dp)
-                    .background(HuaweiSyncTheme.colors.accentContainer)
-            }
             Box(
-                modifier = logoModifier,
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(HuaweiSyncTheme.colors.accentContainer),
                 contentAlignment = Alignment.Center,
             ) {
                 Text("H", color = Color.White, style = MaterialTheme.typography.titleMedium)

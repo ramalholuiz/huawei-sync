@@ -44,31 +44,33 @@ class AppShellNavigationRegressionTest {
         composeRule.setContent { AppUnderTest() }
 
         composeRule.onNodeWithTag("bottom-nav-dashboard").assertIsSelected()
-        composeRule.onNodeWithContentDescription("Pipeline").performClick()
-        composeRule.onNodeWithTag("bottom-nav-pipeline").assertIsSelected()
+        composeRule.onNodeWithContentDescription("Diagnostics").performClick()
+        composeRule.onNodeWithTag("bottom-nav-diagnostics").assertIsSelected()
         composeRule.onNodeWithContentDescription("History").performClick()
         composeRule.onNodeWithTag("bottom-nav-history").assertIsSelected()
     }
 
     @Test
-    fun `integrations remains accessible through More under one consistent label`() {
+    fun `setup remains accessible through More`() {
         composeRule.setContent { AppUnderTest() }
 
         composeRule.onNodeWithContentDescription("More").performClick()
-        composeRule.onNodeWithTag("nav-integrations").assertIsDisplayed().performClick()
-        composeRule.onNodeWithText("Integrations").assertIsDisplayed()
+        composeRule.onNodeWithTag("nav-onboarding").assertIsDisplayed().performClick()
+        composeRule.onNodeWithText("Your workouts, available through Health Connect.").assertIsDisplayed()
         composeRule.onAllNodesWithTag("global-bottom-navigation")
             .assertCountEquals(1)
         composeRule.onNodeWithTag("bottom-nav-more").assertIsSelected()
     }
 
     @Test
-    fun `more menu drops the settings relabel so integrations shows one name`() {
+    fun `more menu excludes disabled product experiments`() {
         composeRule.setContent { AppUnderTest() }
 
         composeRule.onNodeWithContentDescription("More").performClick()
-        composeRule.onNodeWithTag("nav-settings").assertDoesNotExist()
-        composeRule.onNodeWithTag("nav-integrations").assertIsDisplayed()
+        composeRule.onNodeWithTag("nav-pipeline").assertDoesNotExist()
+        composeRule.onNodeWithTag("nav-integrations").assertDoesNotExist()
+        composeRule.onNodeWithTag("nav-automation").assertDoesNotExist()
+        composeRule.onNodeWithTag("nav-ai-assistant").assertDoesNotExist()
     }
 
     @Test
@@ -76,7 +78,7 @@ class AppShellNavigationRegressionTest {
         val state = HuaweiSyncNavigationState(Dashboard)
 
         assertFalse(state.navigateBack())
-        state.navigateTo(Pipeline)
+        state.navigateTo(Diagnostics)
         assertTrue(state.navigateBack())
         assertSame(Dashboard, state.currentDestination)
 
@@ -97,13 +99,16 @@ class AppShellNavigationRegressionTest {
     }
 
     @Test
-    fun `nav shell contains no residual settings label for the integrations route`() {
+    fun `nav shell contains no residual disabled route labels`() {
         val projectRoot = findProjectRoot()
         val shell = projectRoot.resolve("app/src/main/java/dev/lui/huaweisync/ui/HuaweiSyncRoot.kt")
         val text = shell.readText()
         assertFalse(
-            "Settings relabel resurfaced in ${shell.fileName}",
-            text.contains("\"Settings\"") || text.contains("nav-settings"),
+            "Disabled route label resurfaced in ${shell.fileName}",
+            text.contains("\"Settings\"") ||
+                text.contains("nav-settings") ||
+                text.contains("\"AI Assistant\"") ||
+                text.contains("\"Automation\""),
         )
     }
 

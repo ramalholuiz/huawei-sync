@@ -5,17 +5,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.test.assertHasClickAction
-import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.dp
 import dev.lui.huaweisync.ui.components.SectionHeader
 import dev.lui.huaweisync.ui.components.StraightEdgeButton
-import dev.lui.huaweisync.ui.screens.assistant.AssistantScreen
-import dev.lui.huaweisync.ui.state.AssistantLocalContext
 import dev.lui.huaweisync.ui.theme.DarkHuaweiSyncColors
 import dev.lui.huaweisync.ui.theme.HuaweiSyncTheme
 import dev.lui.huaweisync.ui.theme.LightHuaweiSyncColors
@@ -60,30 +54,6 @@ class AccessibilityResponsiveRegressionTest {
     }
 
     @Test
-    fun `assistant prompt exposes one named button with a 48dp target`() {
-        compose.setContent {
-            HuaweiSyncTheme(darkTheme = false) {
-                AssistantScreen(
-                    context = AssistantLocalContext(
-                        healthConnectStatus = "Ready",
-                        gymRatsStatus = "Manual validation pending",
-                        ledgerWorkoutCount = 1,
-                        attemptCount = 1,
-                        sanitizedFailureSummary = null,
-                    ),
-                )
-            }
-        }
-
-        compose.onNodeWithContentDescription(
-            "Ask: What does my current sync status mean?",
-            useUnmergedTree = true,
-        )
-            .assertHasClickAction()
-            .assertHeightIsAtLeast(48.dp)
-    }
-
-    @Test
     fun `runtime semantic foregrounds meet WCAG AA contrast`() {
         listOf(DarkHuaweiSyncColors, LightHuaweiSyncColors).forEach { palette ->
             listOf(palette.background, palette.surface1).forEach { surface ->
@@ -125,22 +95,18 @@ class AccessibilityResponsiveRegressionTest {
     }
 
     @Test
-    fun `all ten destinations opt into the screenshot matrix`() {
+    fun `active destinations opt into the screenshot matrix`() {
         val sourceRoot = File("src/main/java/dev/lui/huaweisync/ui/screens")
         val screens = mapOf(
             "onboarding/OnboardingScreen.kt" to "OnboardingLoadingPreview",
             "dashboard/DashboardScreen.kt" to "DashboardVerifiedPreview",
-            "pipeline/PipelineScreen.kt" to "PipelineScreenPreview",
             "sync/SyncNowModal.kt" to "SyncNowModalPreview",
-            "integrations/IntegrationsScreen.kt" to "IntegrationsScreenPreview",
             "diagnostics/DiagnosticsScreen.kt" to "VerifiedDiagnosticsPreview",
-            "automation/AutomationScreen.kt" to "AutomationScreenPreview",
             "history/HistoryScreen.kt" to "HistoryContentPreview",
             "detail/ActivityDetailScreen.kt" to "VerifiedDetailPreview",
-            "assistant/AssistantScreen.kt" to "AssistantScreenPreview",
         )
 
-        assertEquals(10, screens.size)
+        assertEquals(6, screens.size)
         screens.forEach { (relativePath, previewFunction) ->
             val source = File(sourceRoot, relativePath).readText()
             val marker = "@dev.lui.huaweisync.ui.preview.HuaweiSyncScreenshotPreviews\n@Composable\nprivate fun $previewFunction"

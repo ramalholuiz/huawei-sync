@@ -212,3 +212,17 @@ Changed:
 
 - Added `docs/sync-infra-loop.md` to track the Bluetooth sync loop as a graph: implement, verify, record evidence, fix/block, and repeat.
 - Marked the current active node as central reader complete in code, with peripheral loopback and physical evidence still open.
+
+## 2026-08-10 — Sync-only app surface
+
+Changed:
+
+- Reduced the installed app navigation to Dashboard, Diagnostics, History, Setup, and Sync now.
+- Removed the debug prototype-gallery trigger from the Dashboard.
+- Kept automation, AI assistant, integration gallery, and standalone pipeline screens out of the active app shell while preserving their source files for now to avoid a risky delete-only churn.
+- Updated navigation and screenshot regression tests to treat only the sync surfaces as active product delivery.
+
+Still not claimed:
+
+- Direct Huawei Watch Bluetooth sync is not marked working. The current BLE code targets the controlled `huawei-sync-workout-v1` loopback service only.
+- A real Huawei source still requires official Huawei API access, an official/documented Bluetooth protocol, or software controlled by us on the watch side.
