@@ -96,7 +96,7 @@ fun StatusLabel(
         ModernistStatus.Warning -> VisualStatus.Attention
         ModernistStatus.Error -> VisualStatus.Error
     }
-    StatusChip(label = status.spokenState, status = visualStatus, modifier = modifier)
+    StatusChip(label = status.label, status = visualStatus, modifier = modifier)
 }
 
 @Composable
@@ -168,10 +168,11 @@ fun StraightEdgeButton(
     accent: Boolean = false,
     leadingIcon: ImageVector? = null,
 ) {
+    val visibleLabel = label.uppercase()
     // Temporary source-compatible alias; new code should choose PrimaryAction or SecondaryAction.
     if (accent) {
         PrimaryAction(
-            label = label,
+            label = visibleLabel,
             onClick = onClick,
             modifier = modifier,
             enabled = enabled,
@@ -179,7 +180,7 @@ fun StraightEdgeButton(
         )
     } else {
         SecondaryAction(
-            label = label,
+            label = visibleLabel,
             onClick = onClick,
             modifier = modifier,
             enabled = enabled,

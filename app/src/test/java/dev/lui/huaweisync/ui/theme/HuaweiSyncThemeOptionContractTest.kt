@@ -73,7 +73,7 @@ class HuaweiSyncThemeOptionContractTest {
             surface2 = 0xFFF1F1EE,
             surface3 = 0xFFE8E8E4,
             accent = 0xFF2E7D5B,
-            accentForeground = 0xFF2E7D5B,
+            accentForeground = 0xFF2A7052,
             accentContainer = 0xFFC7E4D4,
             success = 0xFF2E7D5B,
             warning = 0xFF8A5200,
