@@ -54,7 +54,7 @@ class AccessibilityResponsiveRegressionTest {
 
         val heading = compose.onNodeWithText("A deliberately long destination heading")
             .fetchSemanticsNode().boundsInRoot
-        val action = compose.onNodeWithText("ACTION", useUnmergedTree = true)
+        val action = compose.onNodeWithText("Action", useUnmergedTree = true)
             .fetchSemanticsNode().boundsInRoot
         assertBelow(action = action, heading = heading)
     }

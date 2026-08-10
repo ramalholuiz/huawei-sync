@@ -61,7 +61,7 @@ class ModernistComponentsTest {
             }
         }
 
-        compose.onNodeWithText("REVIEW")
+        compose.onNodeWithText("Review")
             .assertHasClickAction()
             .assertHeightIsAtLeast(ModernistComponentMetrics.minimumTouchTarget)
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))

@@ -265,7 +265,7 @@ fun StatusChip(
             .background(color.copy(alpha = 0.10f))
             .border(HuaweiSyncGeometry.borderThin, color.copy(alpha = 0.55f), ChipShape)
             .padding(horizontal = HuaweiSyncSpacing.sm)
-            .semantics { stateDescription = status.spokenState },
+            .semantics(mergeDescendants = true) { stateDescription = status.spokenState },
         horizontalArrangement = Arrangement.spacedBy(HuaweiSyncSpacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {

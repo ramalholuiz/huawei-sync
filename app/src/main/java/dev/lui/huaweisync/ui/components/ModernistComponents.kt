@@ -168,11 +168,10 @@ fun StraightEdgeButton(
     accent: Boolean = false,
     leadingIcon: ImageVector? = null,
 ) {
-    val visibleLabel = label.uppercase()
     // Temporary source-compatible alias; new code should choose PrimaryAction or SecondaryAction.
     if (accent) {
         PrimaryAction(
-            label = visibleLabel,
+            label = label,
             onClick = onClick,
             modifier = modifier,
             enabled = enabled,
@@ -180,7 +179,7 @@ fun StraightEdgeButton(
         )
     } else {
         SecondaryAction(
-            label = visibleLabel,
+            label = label,
             onClick = onClick,
             modifier = modifier,
             enabled = enabled,
