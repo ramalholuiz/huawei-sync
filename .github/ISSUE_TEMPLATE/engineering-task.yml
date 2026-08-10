@@ -1,0 +1,42 @@
+name: Engineering task
+description: Track infra, sync, validation, or release work.
+title: "[Task] "
+labels: ["engineering"]
+body:
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - P0
+        - P1
+        - P2
+        - P3
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should be true when this is finished?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Tests, evidence, and manual checks required.
+    validations:
+      required: true
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: Boundaries
+      options:
+        - label: Uses official/documented APIs only.
+          required: true
+        - label: Preserves deterministic deduplication.
+          required: true
+        - label: Does not add UI scope unless the task explicitly needs it.
+          required: true
+
