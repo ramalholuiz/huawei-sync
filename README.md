@@ -24,6 +24,12 @@ The project is gate-driven. Do not build the full product until Gate 1 Health Co
 - `docs/gates.md` — gate checklists and PASS/BLOCKED evidence.
 - `docs/progress.md` — progress log and next steps.
 - `docs/data-mapping.md` — Huawei/Strava → domain → Health Connect mapping.
+- `docs/bluetooth-sync-infra.md` — Bluetooth source-ingestion checkpoint and boundary.
+- `docs/bluetooth-desktop-validation.md` — desktop/device validation runbook for controlled Bluetooth loopback.
+- `docs/sync-infra-loop.md` — current infrastructure loop and graph.
+- `docs/mobile-engineering-audit.md` — current engineering audit and priority plan.
+- `docs/engineering-standards.md` — definition of done, sync, Bluetooth, test, and release rules.
+- `docs/github-issues-backlog.md` — exact issue drafts for missing GitHub work.
 - `scripts/verify.sh` — verification entry point.
 
 ## Verified baseline
@@ -37,7 +43,7 @@ Commit `15e3fbd` and the supplied Windows evidence establish this `VERIFIED` bui
 - a generated debug APK installed successfully on `emulator-5554`;
 - `MainActivity` launched without an immediate crash and reported Health Connect `Available`.
 
-Gate 1 remains `BLOCKED`: the build/install/launch baseline does not prove an actual permission grant, synthetic Health Connect write/readback, three-run idempotency, or reinstall behavior.
+Later Gate 1 emulator evidence promoted Gate 1 to `PASS`; see `docs/gates.md` for the authoritative current status.
 
 ## Verification
 

@@ -13,7 +13,7 @@ object HealthWorkoutMapper {
         metadata: ResolvedWorkoutMetadata,
     ): ExerciseSessionRecord {
         require(workout.activityKind == DomainActivityKind.STRENGTH_TRAINING) {
-            "Gate 1 only supports synthetic strength training sessions."
+            "The current Health Connect writer only supports strength training sessions."
         }
         require(workout.endTime.isAfter(workout.startTime)) {
             "Workout endTime must be after startTime."

@@ -13,7 +13,11 @@ import dev.lui.huaweisync.data.SyncErrorPhase
 import dev.lui.huaweisync.data.SyncFailure
 import dev.lui.huaweisync.data.SyncFailureDisposition
 import dev.lui.huaweisync.data.SyncStatus
+import dev.lui.huaweisync.domain.DomainActivityKind
+import dev.lui.huaweisync.domain.DomainWorkout
 import dev.lui.huaweisync.domain.SyntheticWorkoutFactory
+import dev.lui.huaweisync.domain.WorkoutSource
+import dev.lui.huaweisync.source.WorkoutSourceReader
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -276,6 +280,45 @@ class Gate1SyncCoordinatorTest {
         val result = coordinator.runSyntheticStrengthSync()
 
         assertTrue(result is Gate1SyncResult.Completed)
+    }
+
+    @Test
+    fun sourceReaderFeedsTheExistingLedgerAndHealthConnectPipelineWithoutDuplicates() = runTest {
+        val workout = DomainWorkout(
+            source = WorkoutSource.BLUETOOTH,
+            sourceWorkoutId = "watch-fit-5-pro:activity-42",
+            title = "Watch strength",
+            activityKind = DomainActivityKind.STRENGTH_TRAINING,
+            startTime = Instant.parse("2026-08-10T10:00:00Z"),
+            endTime = Instant.parse("2026-08-10T10:45:00Z"),
+            startZoneOffset = ZoneId.of("America/Fortaleza").rules.getOffset(Instant.parse("2026-08-10T10:00:00Z")),
+            endZoneOffset = ZoneId.of("America/Fortaleza").rules.getOffset(Instant.parse("2026-08-10T10:45:00Z")),
+            notes = "Transferred over controlled Bluetooth loopback.",
+            deviceName = "Huawei Watch Fit 5 Pro",
+        )
+        var sourceReads = 0
+        val coordinator = Gate1SyncCoordinator(
+            ledgerStore = database.syncLedgerStore(LedgerClock { 100L }),
+            writer = writer,
+            sourceReader = WorkoutSourceReader {
+                sourceReads += 1
+                workout
+            },
+        )
+
+        val results = mutableListOf<Gate1SyncResult>()
+        repeat(3) { results += coordinator.runSyntheticStrengthSync() }
+
+        val ledger = database.syncLedgerStore()
+            .findBySource(WorkoutSource.BLUETOOTH.stableName, "watch-fit-5-pro:activity-42")!!
+        assertEquals(SyncStatus.SYNCED, ledger.status)
+        assertEquals(1, ledger.attemptCount)
+        assertEquals(WorkoutSource.BLUETOOTH.stableName, ledger.sourceProvider)
+        assertEquals("watch-fit-5-pro:activity-42", ledger.sourceRecordId)
+        assertEquals(ledger.clientRecordId, writer.records.single().metadata.clientRecordId)
+        assertEquals(1, writer.records.size)
+        assertEquals(3, sourceReads)
+        assertEquals(List(3) { 1 }, results.map { it.writeCountForClientRecordId })
     }
 
     @Test

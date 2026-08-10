@@ -8,8 +8,9 @@ import dev.lui.huaweisync.data.SyncFailureDisposition
 import dev.lui.huaweisync.data.SyncLedgerEntry
 import dev.lui.huaweisync.data.SyncStatus
 import dev.lui.huaweisync.domain.PreviousWorkoutMetadata
-import dev.lui.huaweisync.domain.SyntheticWorkoutFactory
 import dev.lui.huaweisync.domain.WorkoutMetadataPolicy
+import dev.lui.huaweisync.source.SyntheticWorkoutSource
+import dev.lui.huaweisync.source.WorkoutSourceReader
 import java.time.Clock
 import kotlinx.coroutines.CancellationException
 
@@ -17,6 +18,7 @@ class Gate1SyncCoordinator(
     private val ledgerStore: Gate1SyncLedger,
     private val writer: HealthWorkoutWriter,
     private val clock: Clock = Clock.systemDefaultZone(),
+    private val sourceReader: WorkoutSourceReader = SyntheticWorkoutSource(clock),
     private val preflight: SyncPreflight = SyncPreflight { SyncPreflightResult.Ready },
     private val confirmer: HealthWorkoutConfirmer = HealthWorkoutConfirmer {
         HealthConfirmationResult.Inconclusive("CONFIRMER_NOT_CONFIGURED")
@@ -26,7 +28,7 @@ class Gate1SyncCoordinator(
     },
 ) {
     suspend fun runSyntheticStrengthSync(): Gate1SyncResult {
-        val workout = SyntheticWorkoutFactory.create(clock)
+        val workout = sourceReader.readWorkout()
         val existing = ledgerStore.findBySource(
             workout.source.stableName,
             workout.sourceWorkoutId,
@@ -105,7 +107,7 @@ class Gate1SyncCoordinator(
     }
 
     suspend fun reconcileSyntheticStrengthSync(): Gate1SyncResult {
-        val workout = SyntheticWorkoutFactory.create(clock)
+        val workout = sourceReader.readWorkout()
         val uncertain = checkNotNull(
             ledgerStore.findBySource(workout.source.stableName, workout.sourceWorkoutId),
         ) { "Reconciliation requires a prepared ledger row." }
@@ -150,7 +152,7 @@ class Gate1SyncCoordinator(
     }
 
     suspend fun confirmSyntheticStrengthSync(): Gate1SyncResult {
-        val workout = SyntheticWorkoutFactory.create(clock)
+        val workout = sourceReader.readWorkout()
         val accepted = checkNotNull(
             ledgerStore.findBySource(workout.source.stableName, workout.sourceWorkoutId),
         ) { "Confirmation requires a prepared ledger row." }

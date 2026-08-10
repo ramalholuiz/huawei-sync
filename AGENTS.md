@@ -40,3 +40,4 @@ Optional secondary flow for later only: Huawei Health → Strava → this app �
 ## Verification
 - Prefer `scripts/verify.sh` for local verification.
 - The final definition of done requires `./gradlew clean test lint assembleDebug` and `scripts/verify.sh` to pass.
+- Follow `docs/engineering-standards.md` for sync, Bluetooth, test, and release standards.

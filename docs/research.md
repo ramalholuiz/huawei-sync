@@ -1,6 +1,6 @@
 # Research: APIs, constraints, and references
 
-Last reviewed: 2026-07-14.
+Last reviewed: 2026-08-10.
 
 ## Android Health Connect
 
@@ -62,6 +62,30 @@ Required manual validation:
 Blocking risk:
 
 - If GymRats does not read third-party `ExerciseSessionRecord` data from Health Connect, the project cannot satisfy the goal without changing scope, because direct GymRats integration is explicitly outside MVP.
+
+## Bluetooth sync infrastructure
+
+Official references to verify during implementation:
+
+- Android Bluetooth permissions: https://developer.android.com/develop/connectivity/bluetooth/bt-permissions
+- Android BLE scan guidance: https://developer.android.com/develop/connectivity/bluetooth/ble/find-ble-devices
+- Android BLE GATT data transfer guidance: https://developer.android.com/develop/connectivity/bluetooth/ble/transfer-ble-data
+- Android companion device pairing: https://developer.android.com/develop/connectivity/bluetooth/companion-device-pairing
+- Android foreground service types: https://developer.android.com/develop/background-work/services/fgs/service-types
+
+Confirmed planning facts from Android documentation:
+
+- Android 12+ has Bluetooth runtime permissions for scan and connect behavior.
+- BLE scans must stop when the target device is found and must have a time limit.
+- GATT reads require connecting, discovering services, locating the target characteristic, and reading asynchronously through callbacks.
+- Companion Device Manager can provide a system pairing flow for companion devices on Android 8.0+ without requiring location permission for the app.
+- Android 14+ foreground services must declare an appropriate service type and matching permission.
+
+Implementation implication:
+
+- Bluetooth work starts with capability/preflight and a controlled loopback, not direct Huawei Watch integration.
+- Direct watch sync is blocked unless an official/documented Huawei Bluetooth protocol exists or the project controls the watch-side software.
+- BitChat Android is a reference for transport lifecycle, packet discipline, retry/outbox, duplicate suppression, and diagnostics only. Do not import chat, mesh routing, channels, Nostr, or social identity.
 
 ## Strava optional fallback
 

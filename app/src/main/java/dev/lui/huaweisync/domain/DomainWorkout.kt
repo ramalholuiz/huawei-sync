@@ -25,6 +25,7 @@ data class DomainWorkout(
 }
 
 enum class WorkoutSource(val stableName: String) {
+    BLUETOOTH("bluetooth"),
     SYNTHETIC("synthetic"),
 }
 

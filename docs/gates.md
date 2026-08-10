@@ -82,6 +82,35 @@ Evidence to record:
 - GymRats observation.
 - Screenshots or written reproduction notes.
 
+## Bluetooth infrastructure checkpoint
+
+Status: TODO
+
+Purpose: prove a controlled Bluetooth source can feed the existing ledger and Health Connect sync path before any more UI expansion.
+
+Checklist:
+
+- [x] Synthetic source is extracted behind a source-agnostic workout reader seam.
+- [x] Bluetooth adapter, enabled state, runtime permissions, and pairing approach are checked before scan/connect.
+- [ ] Companion Device Manager is evaluated for initial pairing.
+- [ ] A controlled Bluetooth loopback transfers one workout-shaped payload.
+- [x] The payload converts to the source-independent domain model.
+- [ ] Three transfers do not create duplicate ledger or Health Connect records.
+- [ ] The real source path is decided: official Huawei API, official/documented Bluetooth protocol, or controlled watch-side software.
+- [ ] No mesh chat, Nostr, channel UI, WhatsApp/Telegram replies, or reverse engineering is implemented.
+
+Evidence to record:
+
+- Android version and Bluetooth permission state.
+- Controlled BLE service UUID: `c4a6f6f0-6c2f-4f65-9df1-3698b9db2c01`.
+- Controlled workout characteristic UUID: `c4a6f6f1-6c2f-4f65-9df1-3698b9db2c01`.
+- Loopback harness ceiling: one GATT read, payload up to 512 bytes.
+- Pairing approach used.
+- Sanitized transfer result codes.
+- Deterministic source identity or documented absence.
+- Ledger row count and Health Connect match count after three transfers.
+- Real-source decision and blocker evidence, if blocked.
+
 ## Gate 3: Huawei real workout read
 
 Status: TODO

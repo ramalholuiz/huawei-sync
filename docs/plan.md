@@ -74,7 +74,7 @@ Exit criteria:
 
 ### Frozen Gate 1 proof and slice ownership
 
-The verified build/install/launch baseline is not runtime proof. Gate 1 remains `BLOCKED` on exactly these five items:
+The verified build/install/launch baseline was not runtime proof. At that checkpoint, Gate 1 was blocked on exactly these five items:
 
 1. Actual Health Connect permission grant for the exercise-session read/write permissions.
 2. A real synthetic `ExerciseSessionRecord` write.
@@ -82,7 +82,7 @@ The verified build/install/launch baseline is not runtime proof. Gate 1 remains 
 4. Three-run idempotency against both Health Connect and the Room ledger.
 5. Reinstall behavior proving deterministic deduplication survives app reinstall.
 
-This is the exhaustive remaining Gate 1 proof. Manual GymRats validation belongs to Gate 2.
+These items were the exhaustive remaining Gate 1 proof before the later emulator evidence recorded in `docs/gates.md`. Manual GymRats validation belongs to Gate 2.
 
 Downstream implementation ownership is also fixed:
 
@@ -109,6 +109,28 @@ Explicit non-goal:
 Exit criteria:
 
 - GymRats imports/displays the synthetic `ExerciseSessionRecord` from Health Connect, or the project is blocked/pivoted with evidence.
+
+## Bluetooth infrastructure checkpoint
+
+Purpose: move the next work back to source ingestion before more UI work.
+
+Deliverables:
+
+- Source-agnostic workout reader seam that preserves the synthetic Gate 1 source.
+- Bluetooth capability preflight for adapter state, runtime permissions, and pairing approach.
+- Controlled Bluetooth loopback transferring one workout-shaped payload into the existing ledger and Health Connect pipeline.
+- Decision evidence for the real source path: official Huawei API, official/documented Bluetooth protocol, or software controlled on the watch side.
+
+Explicit non-goals:
+
+- No mesh chat, Nostr, channel UI, WhatsApp/Telegram replies, or direct Huawei protocol reverse engineering.
+- No additional visual work until a source can produce workout-shaped data.
+
+Exit criteria:
+
+- Three controlled Bluetooth transfers leave one logical workout in Health Connect and one durable ledger identity.
+- A duplicate Bluetooth payload is acknowledged without creating a duplicate Health Connect record.
+- If no official or controlled watch-side protocol exists, direct Bluetooth-to-watch sync is marked `BLOCKED` with evidence.
 
 ## Gate 3: Huawei real workout read
 

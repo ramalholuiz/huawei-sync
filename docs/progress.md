@@ -113,3 +113,102 @@ Final evidence (`VERIFIED`):
 Gate 1 status: `PASS`.
 
 Physical-device resilience validation is deferred. Gate 2 and manual GymRats validation have not started.
+
+## 2026-08-10 — Bluetooth infrastructure refocus
+
+Changed:
+
+- Added `docs/bluetooth-sync-infra.md` to freeze the next direction around source ingestion instead of more UI work.
+- Added a Bluetooth infrastructure checkpoint to the plan and gate checklist.
+- Recorded the BitChat Android boundary: use it as a transport reference, not as app code or chat scope.
+
+Next steps:
+
+1. Extract the synthetic Gate 1 source behind a source-agnostic workout reader seam.
+2. Add Bluetooth capability/preflight checks before any scan/connect code.
+3. Prove a controlled Bluetooth loopback with one workout-shaped payload.
+4. Decide the real source path from evidence: official Huawei API, official/documented Bluetooth protocol, or controlled watch-side software.
+
+## 2026-08-10 — Bluetooth source seam implementation
+
+Changed:
+
+- Added `WorkoutSourceReader` and kept `SyntheticWorkoutSource` as the default source for existing Gate 1 UI actions.
+- Added `WorkoutSource.BLUETOOTH` and proved a Bluetooth-shaped workout can flow through the existing ledger and Health Connect writer boundary.
+- Added a small Android Bluetooth capability reader and preflight contract with closed blocker codes.
+- Added a bounded `huawei-sync-workout-v1` payload parser for controlled Bluetooth loopback tests.
+- Declared the Bluetooth permissions needed before transport work: scan, connect, advertise for controlled loopback, and pre-Android-12 location compatibility.
+
+Still not claimed:
+
+- No Huawei Watch protocol integration exists yet.
+- No scan/connect/GATT service exists yet.
+- No Samsung Health, Strava, GymRats, or other app-specific direct write exists; Health Connect remains the current app-to-app sync bridge.
+
+## 2026-08-10 — Engineering audit and repository workflow
+
+Changed:
+
+- Added `docs/mobile-engineering-audit.md` with the current state, gaps, and P0-P3 plan.
+- Added `docs/engineering-standards.md` as the canonical definition of done for sync, Bluetooth, tests, and release work.
+- Added exact issue drafts in `docs/github-issues-backlog.md`.
+- Added GitHub issue templates, a PR template, and Android CI using the existing Gradle verification command.
+
+Still blocked:
+
+- Local Gradle verification on this macOS host still requires a Java runtime.
+- GitHub issues were drafted locally, not created through GitHub.
+
+## 2026-08-10 — Bluetooth source adapter
+
+Changed:
+
+- Added `BluetoothWorkoutSource`, a small adapter from a controlled Bluetooth payload reader to the existing `WorkoutSourceReader` pipeline.
+- Added a unit test proving decoded Bluetooth payloads reach the source seam and malformed payloads stop before ledger writes.
+
+Still not claimed:
+
+- No physical Android scan/connect/read execution has been proven yet.
+- No real Huawei Watch transfer has been proven.
+
+## 2026-08-10 — Minimal Android BLE central reader
+
+Changed:
+
+- Added a central-side BLE reader that scans for the controlled workout service UUID, stops scanning on the first match, connects over LE GATT, discovers services, and reads the workout summary characteristic.
+- Added legacy pre-Android-12 Bluetooth permissions alongside Android 12+ scan/connect permissions.
+- Added legacy location permission checking to the Bluetooth preflight for Android versions before 12.
+
+Still not claimed:
+
+- No physical Bluetooth loopback has been executed on this host.
+
+## 2026-08-10 — Controlled BLE loopback peripheral
+
+Changed:
+
+- Added a minimal GATT peripheral harness that advertises the controlled workout service UUID and serves one workout summary characteristic.
+- Declared `BLUETOOTH_ADVERTISE` because the app can now act as the loopback peripheral on a second Android device.
+
+Still not claimed:
+
+- The loopback has not been executed on physical devices from this host.
+- The harness is single-read and limited to 512-byte payloads; chunking waits until real payload size requires it.
+
+## 2026-08-10 — Desktop validation wiring
+
+Changed:
+
+- Added `AndroidBluetoothSyncWiring` so the desktop build can assemble the Bluetooth source, preflight, Health Connect writer/inspector, and existing coordinator without UI changes.
+- Added `docs/bluetooth-desktop-validation.md` with the exact desktop/device evidence required before marking loopback `PASS`.
+
+Still blocked:
+
+- Desktop Gradle/device execution is required for compile, lint, and physical loopback evidence.
+
+## 2026-08-10 — Infrastructure loop graph
+
+Changed:
+
+- Added `docs/sync-infra-loop.md` to track the Bluetooth sync loop as a graph: implement, verify, record evidence, fix/block, and repeat.
+- Marked the current active node as central reader complete in code, with peripheral loopback and physical evidence still open.
